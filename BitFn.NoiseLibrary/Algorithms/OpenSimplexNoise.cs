@@ -1,13 +1,21 @@
 ﻿namespace BitFn.NoiseLibrary.Algorithms
 {
+	/// <summary>
+	///     A port of Kurt Spencer's OpenSimplexNoise.java. Computes noise using surflet summation on a Simplectic Honeycomb.
+	/// </summary>
+	/// <remarks>
+	///     Original Java implementation released under public domain:
+	///     https://gist.github.com/KdotJPG/b1270127455a94ac5d19/b6fb5128cf983dffa74e727dbcdebaa23dfce5f4
+	/// </remarks>
 	public class OpenSimplexNoise : INoiseService2D, INoiseService3D, INoiseService4D
 	{
-		private const double StretchConstant_2D = -0.211324865405187; // (1/Math.sqrt(2+1)-1)/2;
 		private const double SquishConstant_2D = 0.366025403784439; // (Math.sqrt(2+1)-1)/2;
-		private const double StretchConstant_3D = -1.0/6; // (1/Math.sqrt(3+1)-1)/3;
 		private const double SquishConstant_3D = 1.0/3; // (Math.sqrt(3+1)-1)/3;
-		private const double StretchConstant_4D = -0.138196601125011; // (1/Math.sqrt(4+1)-1)/4;
 		private const double SquishConstant_4D = 0.309016994374947; // (Math.sqrt(4+1)-1)/4;
+
+		private const double StretchConstant_2D = -0.211324865405187; // (1/Math.sqrt(2+1)-1)/2;
+		private const double StretchConstant_3D = -1.0/6; // (1/Math.sqrt(3+1)-1)/3;
+		private const double StretchConstant_4D = -0.138196601125011; // (1/Math.sqrt(4+1)-1)/4;
 
 		private const double NormConstant_2D = 47;
 		private const double NormConstant_3D = 103;
@@ -20,10 +28,7 @@
 		/// </summary>
 		private static readonly sbyte[] Gradients2D =
 		{
-			5, 2, 2, 5,
-			-5, 2, -2, 5,
-			5, -2, 2, -5,
-			-5, -2, -2, -5
+			5, 2, 2, 5, -5, 2, -2, 5, 5, -2, 2, -5, -5, -2, -2, -5
 		};
 
 		/// <summary>
@@ -32,14 +37,9 @@
 		/// </summary>
 		private static readonly sbyte[] Gradients3D =
 		{
-			-11, 4, 4, -4, 11, 4, -4, 4, 11,
-			11, 4, 4, 4, 11, 4, 4, 4, 11,
-			-11, -4, 4, -4, -11, 4, -4, -4, 11,
-			11, -4, 4, 4, -11, 4, 4, -4, 11,
-			-11, 4, -4, -4, 11, -4, -4, 4, -11,
-			11, 4, -4, 4, 11, -4, 4, 4, -11,
-			-11, -4, -4, -4, -11, -4, -4, -4, -11,
-			11, -4, -4, 4, -11, -4, 4, -4, -11
+			-11, 4, 4, -4, 11, 4, -4, 4, 11, 11, 4, 4, 4, 11, 4, 4, 4, 11, -11, -4, 4, -4, -11, 4, -4, -4, 11, 11, -4, 4, 4, -11,
+			4, 4, -4, 11, -11, 4, -4, -4, 11, -4, -4, 4, -11, 11, 4, -4, 4, 11, -4, 4, 4, -11, -11, -4, -4, -4, -11, -4, -4, -4,
+			-11, 11, -4, -4, 4, -11, -4, 4, -4, -11
 		};
 
 
@@ -49,22 +49,14 @@
 		/// </summary>
 		private static readonly sbyte[] Gradients4D =
 		{
-			3, 1, 1, 1, 1, 3, 1, 1, 1, 1, 3, 1, 1, 1, 1, 3,
-			-3, 1, 1, 1, -1, 3, 1, 1, -1, 1, 3, 1, -1, 1, 1, 3,
-			3, -1, 1, 1, 1, -3, 1, 1, 1, -1, 3, 1, 1, -1, 1, 3,
-			-3, -1, 1, 1, -1, -3, 1, 1, -1, -1, 3, 1, -1, -1, 1, 3,
-			3, 1, -1, 1, 1, 3, -1, 1, 1, 1, -3, 1, 1, 1, -1, 3,
-			-3, 1, -1, 1, -1, 3, -1, 1, -1, 1, -3, 1, -1, 1, -1, 3,
-			3, -1, -1, 1, 1, -3, -1, 1, 1, -1, -3, 1, 1, -1, -1, 3,
-			-3, -1, -1, 1, -1, -3, -1, 1, -1, -1, -3, 1, -1, -1, -1, 3,
-			3, 1, 1, -1, 1, 3, 1, -1, 1, 1, 3, -1, 1, 1, 1, -3,
-			-3, 1, 1, -1, -1, 3, 1, -1, -1, 1, 3, -1, -1, 1, 1, -3,
-			3, -1, 1, -1, 1, -3, 1, -1, 1, -1, 3, -1, 1, -1, 1, -3,
-			-3, -1, 1, -1, -1, -3, 1, -1, -1, -1, 3, -1, -1, -1, 1, -3,
-			3, 1, -1, -1, 1, 3, -1, -1, 1, 1, -3, -1, 1, 1, -1, -3,
-			-3, 1, -1, -1, -1, 3, -1, -1, -1, 1, -3, -1, -1, 1, -1, -3,
-			3, -1, -1, -1, 1, -3, -1, -1, 1, -1, -3, -1, 1, -1, -1, -3,
-			-3, -1, -1, -1, -1, -3, -1, -1, -1, -1, -3, -1, -1, -1, -1, -3
+			3, 1, 1, 1, 1, 3, 1, 1, 1, 1, 3, 1, 1, 1, 1, 3, -3, 1, 1, 1, -1, 3, 1, 1, -1, 1, 3, 1, -1, 1, 1, 3, 3, -1, 1, 1, 1,
+			-3, 1, 1, 1, -1, 3, 1, 1, -1, 1, 3, -3, -1, 1, 1, -1, -3, 1, 1, -1, -1, 3, 1, -1, -1, 1, 3, 3, 1, -1, 1, 1, 3, -1, 1,
+			1, 1, -3, 1, 1, 1, -1, 3, -3, 1, -1, 1, -1, 3, -1, 1, -1, 1, -3, 1, -1, 1, -1, 3, 3, -1, -1, 1, 1, -3, -1, 1, 1, -1,
+			-3, 1, 1, -1, -1, 3, -3, -1, -1, 1, -1, -3, -1, 1, -1, -1, -3, 1, -1, -1, -1, 3, 3, 1, 1, -1, 1, 3, 1, -1, 1, 1, 3,
+			-1, 1, 1, 1, -3, -3, 1, 1, -1, -1, 3, 1, -1, -1, 1, 3, -1, -1, 1, 1, -3, 3, -1, 1, -1, 1, -3, 1, -1, 1, -1, 3, -1, 1,
+			-1, 1, -3, -3, -1, 1, -1, -1, -3, 1, -1, -1, -1, 3, -1, -1, -1, 1, -3, 3, 1, -1, -1, 1, 3, -1, -1, 1, 1, -3, -1, 1, 1,
+			-1, -3, -3, 1, -1, -1, -1, 3, -1, -1, -1, 1, -3, -1, -1, 1, -1, -3, 3, -1, -1, -1, 1, -3, -1, -1, 1, -1, -3, -1, 1,
+			-1, -1, -3, -3, -1, -1, -1, -1, -3, -1, -1, -1, -1, -3, -1, -1, -1, -1, -3
 		};
 
 		private readonly byte[] _permutation;
@@ -2601,9 +2593,8 @@
 
 		private double Extrapolate(int xsb, int ysb, int zsb, int wsb, double dx, double dy, double dz, double dw)
 		{
-			int index =
-				_permutation[(_permutation[(_permutation[(_permutation[xsb & 0xFF] + ysb) & 0xFF] + zsb) & 0xFF] + wsb) & 0xFF] &
-				0xFC;
+			int index = _permutation[(_permutation[(_permutation[(_permutation[xsb & 0xFF]
+			                                                      + ysb) & 0xFF] + zsb) & 0xFF] + wsb) & 0xFF] & 0xFC;
 			return Gradients4D[index]*dx
 			       + Gradients4D[index + 1]*dy
 			       + Gradients4D[index + 2]*dz
