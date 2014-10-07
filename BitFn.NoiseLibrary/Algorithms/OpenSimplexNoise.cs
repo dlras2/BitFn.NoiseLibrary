@@ -89,8 +89,8 @@
 			_permutation = new byte[256];
 			_permutationGradIndex3D = new byte[256];
 			var source = new byte[256];
-			for (byte i = 0; i < 256; i++)
-				source[i] = i;
+			for (int i = 0; i < 256; i++)
+				source[i] = (byte) i;
 			seed = seed*6364136223846793005L + 1442695040888963407L;
 			seed = seed*6364136223846793005L + 1442695040888963407L;
 			seed = seed*6364136223846793005L + 1442695040888963407L;
