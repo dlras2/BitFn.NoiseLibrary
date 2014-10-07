@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<package>
+	<metadata>
+		<id>$id$</id>
+		<version>$version$</version>
+		<title>$title$</title>
+		<authors>$author$</authors>
+		<owners>$author$</owners>
+		<licenseUrl>https://github.com/dlras2/NoiseLibrary/blob/master/LICENSE.md</licenseUrl>
+		<projectUrl>https://github.com/dlras2/NoiseLibrary</projectUrl>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<description>$description$</description>
+		<releaseNotes>$releaseNotes$</releaseNotes>
+		<copyright>Copyright 2014</copyright>
+		<tags>Noise ProceduralGeneration</tags>
+		<references>
+			<reference file="$title$.dll" />
+		</references>
+	</metadata>
+	<files>
+		<file src="\bin\$Configuration$\CodeContracts\*.Contracts.dll" target="lib\net40-Client" />
+	</files>
+</package>
