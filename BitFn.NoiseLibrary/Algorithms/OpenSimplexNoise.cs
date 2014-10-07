@@ -9,19 +9,77 @@
 	/// </remarks>
 	public class OpenSimplexNoise : INoiseService2D, INoiseService3D, INoiseService4D
 	{
-		private const double SquishConstant_2D = 0.366025403784439; // (Math.sqrt(2+1)-1)/2;
-		private const double SquishConstant_3D = 1.0/3; // (Math.sqrt(3+1)-1)/3;
-		private const double SquishConstant_4D = 0.309016994374947; // (Math.sqrt(4+1)-1)/4;
+		/// <summary>
+		///     The squish constant to use for two dimensional noise.
+		/// </summary>
+		/// <remarks>
+		///     <code>(sqrt(2+1)-1)/2 = 0.366025403784438646763723170752936183471402626905190314027903</code>
+		/// </remarks>
+		private const double Squish2D = 0.366025403784438646763723170752936183471402626905190314027903;
 
-		private const double StretchConstant_2D = -0.211324865405187; // (1/Math.sqrt(2+1)-1)/2;
-		private const double StretchConstant_3D = -1.0/6; // (1/Math.sqrt(3+1)-1)/3;
-		private const double StretchConstant_4D = -0.138196601125011; // (1/Math.sqrt(4+1)-1)/4;
+		/// <summary>
+		///     The squish constant to use for three dimensional noise.
+		/// </summary>
+		/// <remarks>
+		///     <code>(sqrt(3+1)-1)/3 = 1/3</code>
+		/// </remarks>
+		private const double Squish3D = 1D/3;
 
-		private const double NormConstant_2D = 47;
-		private const double NormConstant_3D = 103;
-		private const double NormConstant_4D = 30;
+		/// <summary>
+		///     The squish constant to use for four dimensional noise.
+		/// </summary>
+		/// <remarks>
+		///     <code>(sqrt(4+1)-1)/4 = 0.309016994374947424102293417182819058860154589902881431067724</code>
+		/// </remarks>
+		private const double Squish4D = 0.309016994374947424102293417182819058860154589902881431067724;
 
+		/// <summary>
+		///     The strech constant to use for two dimensional noise.
+		/// </summary>
+		/// <remarks>
+		///     <code>(1/sqrt(2+1)-1)/2 = -0.21132486540518711774542560974902127217619912436493656199069</code>
+		/// </remarks>
+		private const double Stretch2D = -0.21132486540518711774542560974902127217619912436493656199069;
+
+		/// <summary>
+		///     The strech constant to use for three dimensional noise.
+		/// </summary>
+		/// <remarks>
+		///     <code>(1/sqrt(3+1)-1)/3 = -1/6</code>
+		/// </remarks>
+		private const double Stretch3D = -1D/6;
+
+		/// <summary>
+		///     The strech constant to use for four dimensional noise.
+		/// </summary>
+		/// <remarks>
+		///     <code>(1/sqrt(4+1)-1)/4 = -0.13819660112501051517954131656343618822796908201942371378645</code>
+		/// </remarks>
+		private const double Stretch4D = -0.13819660112501051517954131656343618822796908201942371378645;
+
+		/// <summary>
+		///     The normalization scalar to use for two dimensional noise.
+		/// </summary>
+		private const double Normalization2D = 47;
+
+		/// <summary>
+		///     The normalization scalar to use for three dimensional noise.
+		/// </summary>
+		private const double Normalization3D = 103;
+
+		/// <summary>
+		///     The normalization scalar to use for four dimensional noise.
+		/// </summary>
+		private const double Normalization4D = 30;
+
+		/// <summary>
+		///     The default seed to use for the parameterless constructor.
+		/// </summary>
 		private const long DefaultSeed = 0;
+
+		private const int PermutationLength = 256;
+		private const long PermutationConstant1 = 6364136223846793005L;
+		private const long PermutationConstant2 = 1442695040888963407L;
 
 		/// <summary>
 		///     Gradients for 2D. They approximate the directions to the vertices of an octagon from the center.
@@ -70,9 +128,9 @@
 		public OpenSimplexNoise(byte[] perm)
 		{
 			_permutation = perm;
-			_permutationGradIndex3D = new byte[256];
+			_permutationGradIndex3D = new byte[PermutationLength];
 
-			for (int i = 0; i < 256; i++)
+			for (int i = 0; i < PermutationLength; i++)
 			{
 				// Since 3D has 24 gradients, simple bitmask won't work, so precompute modulo array.
 				_permutationGradIndex3D[i] = (byte) ((perm[i]%(Gradients3D.Length/3))*3);
@@ -86,17 +144,17 @@
 		/// <param name="seed"></param>
 		public OpenSimplexNoise(long seed)
 		{
-			_permutation = new byte[256];
-			_permutationGradIndex3D = new byte[256];
-			var source = new byte[256];
-			for (int i = 0; i < 256; i++)
+			_permutation = new byte[PermutationLength];
+			_permutationGradIndex3D = new byte[PermutationLength];
+			var source = new byte[PermutationLength];
+			for (int i = 0; i < PermutationLength; i++)
 				source[i] = (byte) i;
-			seed = seed*6364136223846793005L + 1442695040888963407L;
-			seed = seed*6364136223846793005L + 1442695040888963407L;
-			seed = seed*6364136223846793005L + 1442695040888963407L;
-			for (int i = 255; i >= 0; i--)
+			seed = seed*PermutationConstant1 + PermutationConstant2;
+			seed = seed*PermutationConstant1 + PermutationConstant2;
+			seed = seed*PermutationConstant1 + PermutationConstant2;
+			for (int i = PermutationLength - 1; i >= 0; i--)
 			{
-				seed = seed*6364136223846793005L + 1442695040888963407L;
+				seed = seed*PermutationConstant1 + PermutationConstant2;
 				var r = (int) ((seed + 31)%(i + 1));
 				if (r < 0)
 					r += (i + 1);
@@ -109,7 +167,7 @@
 		public double ComputeNoise(double x, double y)
 		{
 			// Place input coordinates onto grid.
-			double stretchOffset = (x + y)*StretchConstant_2D;
+			double stretchOffset = (x + y)*Stretch2D;
 			double xs = x + stretchOffset;
 			double ys = y + stretchOffset;
 
@@ -118,7 +176,7 @@
 			int ysb = FastFloor(ys);
 
 			// Skew out to get actual coordinates of rhombus origin. We'll need these later.
-			double squishOffset = (xsb + ysb)*SquishConstant_2D;
+			double squishOffset = (xsb + ysb)*Squish2D;
 			double xb = xsb + squishOffset;
 			double yb = ysb + squishOffset;
 
@@ -140,8 +198,8 @@
 			double value = 0;
 
 			// Contribution (1,0)
-			double dx1 = dx0 - 1 - SquishConstant_2D;
-			double dy1 = dy0 - 0 - SquishConstant_2D;
+			double dx1 = dx0 - 1 - Squish2D;
+			double dy1 = dy0 - 0 - Squish2D;
 			double attn1 = 2 - dx1*dx1 - dy1*dy1;
 			if (attn1 > 0)
 			{
@@ -150,8 +208,8 @@
 			}
 
 			// Contribution (0,1)
-			double dx2 = dx0 - 0 - SquishConstant_2D;
-			double dy2 = dy0 - 1 - SquishConstant_2D;
+			double dx2 = dx0 - 0 - Squish2D;
+			double dy2 = dy0 - 1 - Squish2D;
 			double attn2 = 2 - dx2*dx2 - dy2*dy2;
 			if (attn2 > 0)
 			{
@@ -186,8 +244,8 @@
 					// (1,0) and (0,1) are the closest two vertices.
 					xsvExt = xsb + 1;
 					ysvExt = ysb + 1;
-					dxExt = dx0 - 1 - 2*SquishConstant_2D;
-					dyExt = dy0 - 1 - 2*SquishConstant_2D;
+					dxExt = dx0 - 1 - 2*Squish2D;
+					dyExt = dy0 - 1 - 2*Squish2D;
 				}
 			}
 			else
@@ -201,15 +259,15 @@
 					{
 						xsvExt = xsb + 2;
 						ysvExt = ysb + 0;
-						dxExt = dx0 - 2 - 2*SquishConstant_2D;
-						dyExt = dy0 + 0 - 2*SquishConstant_2D;
+						dxExt = dx0 - 2 - 2*Squish2D;
+						dyExt = dy0 + 0 - 2*Squish2D;
 					}
 					else
 					{
 						xsvExt = xsb + 0;
 						ysvExt = ysb + 2;
-						dxExt = dx0 + 0 - 2*SquishConstant_2D;
-						dyExt = dy0 - 2 - 2*SquishConstant_2D;
+						dxExt = dx0 + 0 - 2*Squish2D;
+						dyExt = dy0 - 2 - 2*Squish2D;
 					}
 				}
 				else
@@ -222,8 +280,8 @@
 				}
 				xsb += 1;
 				ysb += 1;
-				dx0 = dx0 - 1 - 2*SquishConstant_2D;
-				dy0 = dy0 - 1 - 2*SquishConstant_2D;
+				dx0 = dx0 - 1 - 2*Squish2D;
+				dy0 = dy0 - 1 - 2*Squish2D;
 			}
 
 			// Contribution (0,0) or (1,1)
@@ -242,14 +300,14 @@
 				value += attnExt*attnExt*Extrapolate(xsvExt, ysvExt, dxExt, dyExt);
 			}
 
-			return value/NormConstant_2D;
+			return value/Normalization2D;
 		}
 
 		// 3D OpenSimplex (Simplectic) Noise.
 		public double ComputeNoise(double x, double y, double z)
 		{
 			// Place input coordinates on simplectic honeycomb.
-			double stretchOffset = (x + y + z)*StretchConstant_3D;
+			double stretchOffset = (x + y + z)*Stretch3D;
 			double xs = x + stretchOffset;
 			double ys = y + stretchOffset;
 			double zs = z + stretchOffset;
@@ -260,7 +318,7 @@
 			int zsb = FastFloor(zs);
 
 			// Skew out to get actual coordinates of rhombohedron origin. We'll need these later.
-			double squishOffset = (xsb + ysb + zsb)*SquishConstant_3D;
+			double squishOffset = (xsb + ysb + zsb)*Squish3D;
 			double xb = xsb + squishOffset;
 			double yb = ysb + squishOffset;
 			double zb = zsb + squishOffset;
@@ -369,42 +427,42 @@
 					{
 						xsvExt0 = xsb;
 						xsvExt1 = xsb - 1;
-						dxExt0 = dx0 - 2*SquishConstant_3D;
-						dxExt1 = dx0 + 1 - SquishConstant_3D;
+						dxExt0 = dx0 - 2*Squish3D;
+						dxExt1 = dx0 + 1 - Squish3D;
 					}
 					else
 					{
 						xsvExt0 = xsvExt1 = xsb + 1;
-						dxExt0 = dx0 - 1 - 2*SquishConstant_3D;
-						dxExt1 = dx0 - 1 - SquishConstant_3D;
+						dxExt0 = dx0 - 1 - 2*Squish3D;
+						dxExt1 = dx0 - 1 - Squish3D;
 					}
 
 					if ((c & 0x02) == 0)
 					{
 						ysvExt0 = ysb;
 						ysvExt1 = ysb - 1;
-						dyExt0 = dy0 - 2*SquishConstant_3D;
-						dyExt1 = dy0 + 1 - SquishConstant_3D;
+						dyExt0 = dy0 - 2*Squish3D;
+						dyExt1 = dy0 + 1 - Squish3D;
 					}
 					else
 					{
 						ysvExt0 = ysvExt1 = ysb + 1;
-						dyExt0 = dy0 - 1 - 2*SquishConstant_3D;
-						dyExt1 = dy0 - 1 - SquishConstant_3D;
+						dyExt0 = dy0 - 1 - 2*Squish3D;
+						dyExt1 = dy0 - 1 - Squish3D;
 					}
 
 					if ((c & 0x04) == 0)
 					{
 						zsvExt0 = zsb;
 						zsvExt1 = zsb - 1;
-						dzExt0 = dz0 - 2*SquishConstant_3D;
-						dzExt1 = dz0 + 1 - SquishConstant_3D;
+						dzExt0 = dz0 - 2*Squish3D;
+						dzExt1 = dz0 + 1 - Squish3D;
 					}
 					else
 					{
 						zsvExt0 = zsvExt1 = zsb + 1;
-						dzExt0 = dz0 - 1 - 2*SquishConstant_3D;
-						dzExt1 = dz0 - 1 - SquishConstant_3D;
+						dzExt0 = dz0 - 1 - 2*Squish3D;
+						dzExt1 = dz0 - 1 - Squish3D;
 					}
 				}
 
@@ -417,9 +475,9 @@
 				}
 
 				// Contribution (1,0,0)
-				double dx1 = dx0 - 1 - SquishConstant_3D;
-				double dy1 = dy0 - 0 - SquishConstant_3D;
-				double dz1 = dz0 - 0 - SquishConstant_3D;
+				double dx1 = dx0 - 1 - Squish3D;
+				double dy1 = dy0 - 0 - Squish3D;
+				double dz1 = dz0 - 0 - Squish3D;
 				double attn1 = 2 - dx1*dx1 - dy1*dy1 - dz1*dz1;
 				if (attn1 > 0)
 				{
@@ -428,8 +486,8 @@
 				}
 
 				// Contribution (0,1,0)
-				double dx2 = dx0 - 0 - SquishConstant_3D;
-				double dy2 = dy0 - 1 - SquishConstant_3D;
+				double dx2 = dx0 - 0 - Squish3D;
+				double dy2 = dy0 - 1 - Squish3D;
 				double dz2 = dz1;
 				double attn2 = 2 - dx2*dx2 - dy2*dy2 - dz2*dz2;
 				if (attn2 > 0)
@@ -441,7 +499,7 @@
 				// Contribution (0,0,1)
 				double dx3 = dx2;
 				double dy3 = dy1;
-				double dz3 = dz0 - 1 - SquishConstant_3D;
+				double dz3 = dz0 - 1 - Squish3D;
 				double attn3 = 2 - dx3*dx3 - dy3*dy3 - dz3*dz3;
 				if (attn3 > 0)
 				{
@@ -481,19 +539,19 @@
 					{
 						xsvExt0 = xsb + 2;
 						xsvExt1 = xsb + 1;
-						dxExt0 = dx0 - 2 - 3*SquishConstant_3D;
-						dxExt1 = dx0 - 1 - 3*SquishConstant_3D;
+						dxExt0 = dx0 - 2 - 3*Squish3D;
+						dxExt1 = dx0 - 1 - 3*Squish3D;
 					}
 					else
 					{
 						xsvExt0 = xsvExt1 = xsb;
-						dxExt0 = dxExt1 = dx0 - 3*SquishConstant_3D;
+						dxExt0 = dxExt1 = dx0 - 3*Squish3D;
 					}
 
 					if ((c & 0x02) != 0)
 					{
 						ysvExt0 = ysvExt1 = ysb + 1;
-						dyExt0 = dyExt1 = dy0 - 1 - 3*SquishConstant_3D;
+						dyExt0 = dyExt1 = dy0 - 1 - 3*Squish3D;
 						if ((c & 0x01) != 0)
 						{
 							ysvExt1 += 1;
@@ -508,20 +566,20 @@
 					else
 					{
 						ysvExt0 = ysvExt1 = ysb;
-						dyExt0 = dyExt1 = dy0 - 3*SquishConstant_3D;
+						dyExt0 = dyExt1 = dy0 - 3*Squish3D;
 					}
 
 					if ((c & 0x04) != 0)
 					{
 						zsvExt0 = zsb + 1;
 						zsvExt1 = zsb + 2;
-						dzExt0 = dz0 - 1 - 3*SquishConstant_3D;
-						dzExt1 = dz0 - 2 - 3*SquishConstant_3D;
+						dzExt0 = dz0 - 1 - 3*Squish3D;
+						dzExt1 = dz0 - 2 - 3*Squish3D;
 					}
 					else
 					{
 						zsvExt0 = zsvExt1 = zsb;
-						dzExt0 = dzExt1 = dz0 - 3*SquishConstant_3D;
+						dzExt0 = dzExt1 = dz0 - 3*Squish3D;
 					}
 				}
 				else
@@ -533,49 +591,49 @@
 					{
 						xsvExt0 = xsb + 1;
 						xsvExt1 = xsb + 2;
-						dxExt0 = dx0 - 1 - SquishConstant_3D;
-						dxExt1 = dx0 - 2 - 2*SquishConstant_3D;
+						dxExt0 = dx0 - 1 - Squish3D;
+						dxExt1 = dx0 - 2 - 2*Squish3D;
 					}
 					else
 					{
 						xsvExt0 = xsvExt1 = xsb;
-						dxExt0 = dx0 - SquishConstant_3D;
-						dxExt1 = dx0 - 2*SquishConstant_3D;
+						dxExt0 = dx0 - Squish3D;
+						dxExt1 = dx0 - 2*Squish3D;
 					}
 
 					if ((c & 0x02) != 0)
 					{
 						ysvExt0 = ysb + 1;
 						ysvExt1 = ysb + 2;
-						dyExt0 = dy0 - 1 - SquishConstant_3D;
-						dyExt1 = dy0 - 2 - 2*SquishConstant_3D;
+						dyExt0 = dy0 - 1 - Squish3D;
+						dyExt1 = dy0 - 2 - 2*Squish3D;
 					}
 					else
 					{
 						ysvExt0 = ysvExt1 = ysb;
-						dyExt0 = dy0 - SquishConstant_3D;
-						dyExt1 = dy0 - 2*SquishConstant_3D;
+						dyExt0 = dy0 - Squish3D;
+						dyExt1 = dy0 - 2*Squish3D;
 					}
 
 					if ((c & 0x04) != 0)
 					{
 						zsvExt0 = zsb + 1;
 						zsvExt1 = zsb + 2;
-						dzExt0 = dz0 - 1 - SquishConstant_3D;
-						dzExt1 = dz0 - 2 - 2*SquishConstant_3D;
+						dzExt0 = dz0 - 1 - Squish3D;
+						dzExt1 = dz0 - 2 - 2*Squish3D;
 					}
 					else
 					{
 						zsvExt0 = zsvExt1 = zsb;
-						dzExt0 = dz0 - SquishConstant_3D;
-						dzExt1 = dz0 - 2*SquishConstant_3D;
+						dzExt0 = dz0 - Squish3D;
+						dzExt1 = dz0 - 2*Squish3D;
 					}
 				}
 
 				// Contribution (1,1,0)
-				double dx3 = dx0 - 1 - 2*SquishConstant_3D;
-				double dy3 = dy0 - 1 - 2*SquishConstant_3D;
-				double dz3 = dz0 - 0 - 2*SquishConstant_3D;
+				double dx3 = dx0 - 1 - 2*Squish3D;
+				double dy3 = dy0 - 1 - 2*Squish3D;
+				double dz3 = dz0 - 0 - 2*Squish3D;
 				double attn3 = 2 - dx3*dx3 - dy3*dy3 - dz3*dz3;
 				if (attn3 > 0)
 				{
@@ -585,8 +643,8 @@
 
 				// Contribution (1,0,1)
 				double dx2 = dx3;
-				double dy2 = dy0 - 0 - 2*SquishConstant_3D;
-				double dz2 = dz0 - 1 - 2*SquishConstant_3D;
+				double dy2 = dy0 - 0 - 2*Squish3D;
+				double dz2 = dz0 - 1 - 2*Squish3D;
 				double attn2 = 2 - dx2*dx2 - dy2*dy2 - dz2*dz2;
 				if (attn2 > 0)
 				{
@@ -595,7 +653,7 @@
 				}
 
 				// Contribution (0,1,1)
-				double dx1 = dx0 - 0 - 2*SquishConstant_3D;
+				double dx1 = dx0 - 0 - 2*Squish3D;
 				double dy1 = dy3;
 				double dz1 = dz2;
 				double attn1 = 2 - dx1*dx1 - dy1*dy1 - dz1*dz1;
@@ -606,9 +664,9 @@
 				}
 
 				// Contribution (1,1,1)
-				dx0 = dx0 - 1 - 3*SquishConstant_3D;
-				dy0 = dy0 - 1 - 3*SquishConstant_3D;
-				dz0 = dz0 - 1 - 3*SquishConstant_3D;
+				dx0 = dx0 - 1 - 3*Squish3D;
+				dy0 = dy0 - 1 - 3*Squish3D;
+				dz0 = dz0 - 1 - 3*Squish3D;
 				double attn0 = 2 - dx0*dx0 - dy0*dy0 - dz0*dz0;
 				if (attn0 > 0)
 				{
@@ -699,9 +757,9 @@
 						// Both closest points on (1,1,1) side
 
 						// One of the two extra points is (1,1,1)
-						dxExt0 = dx0 - 1 - 3*SquishConstant_3D;
-						dyExt0 = dy0 - 1 - 3*SquishConstant_3D;
-						dzExt0 = dz0 - 1 - 3*SquishConstant_3D;
+						dxExt0 = dx0 - 1 - 3*Squish3D;
+						dyExt0 = dy0 - 1 - 3*Squish3D;
+						dzExt0 = dz0 - 1 - 3*Squish3D;
 						xsvExt0 = xsb + 1;
 						ysvExt0 = ysb + 1;
 						zsvExt0 = zsb + 1;
@@ -710,27 +768,27 @@
 						var c = (byte) (aPoint & bPoint);
 						if ((c & 0x01) != 0)
 						{
-							dxExt1 = dx0 - 2 - 2*SquishConstant_3D;
-							dyExt1 = dy0 - 2*SquishConstant_3D;
-							dzExt1 = dz0 - 2*SquishConstant_3D;
+							dxExt1 = dx0 - 2 - 2*Squish3D;
+							dyExt1 = dy0 - 2*Squish3D;
+							dzExt1 = dz0 - 2*Squish3D;
 							xsvExt1 = xsb + 2;
 							ysvExt1 = ysb;
 							zsvExt1 = zsb;
 						}
 						else if ((c & 0x02) != 0)
 						{
-							dxExt1 = dx0 - 2*SquishConstant_3D;
-							dyExt1 = dy0 - 2 - 2*SquishConstant_3D;
-							dzExt1 = dz0 - 2*SquishConstant_3D;
+							dxExt1 = dx0 - 2*Squish3D;
+							dyExt1 = dy0 - 2 - 2*Squish3D;
+							dzExt1 = dz0 - 2*Squish3D;
 							xsvExt1 = xsb;
 							ysvExt1 = ysb + 2;
 							zsvExt1 = zsb;
 						}
 						else
 						{
-							dxExt1 = dx0 - 2*SquishConstant_3D;
-							dyExt1 = dy0 - 2*SquishConstant_3D;
-							dzExt1 = dz0 - 2 - 2*SquishConstant_3D;
+							dxExt1 = dx0 - 2*Squish3D;
+							dyExt1 = dy0 - 2*Squish3D;
+							dzExt1 = dz0 - 2 - 2*Squish3D;
 							xsvExt1 = xsb;
 							ysvExt1 = ysb;
 							zsvExt1 = zsb + 2;
@@ -752,27 +810,27 @@
 						var c = (byte) (aPoint | bPoint);
 						if ((c & 0x01) == 0)
 						{
-							dxExt1 = dx0 + 1 - SquishConstant_3D;
-							dyExt1 = dy0 - 1 - SquishConstant_3D;
-							dzExt1 = dz0 - 1 - SquishConstant_3D;
+							dxExt1 = dx0 + 1 - Squish3D;
+							dyExt1 = dy0 - 1 - Squish3D;
+							dzExt1 = dz0 - 1 - Squish3D;
 							xsvExt1 = xsb - 1;
 							ysvExt1 = ysb + 1;
 							zsvExt1 = zsb + 1;
 						}
 						else if ((c & 0x02) == 0)
 						{
-							dxExt1 = dx0 - 1 - SquishConstant_3D;
-							dyExt1 = dy0 + 1 - SquishConstant_3D;
-							dzExt1 = dz0 - 1 - SquishConstant_3D;
+							dxExt1 = dx0 - 1 - Squish3D;
+							dyExt1 = dy0 + 1 - Squish3D;
+							dzExt1 = dz0 - 1 - Squish3D;
 							xsvExt1 = xsb + 1;
 							ysvExt1 = ysb - 1;
 							zsvExt1 = zsb + 1;
 						}
 						else
 						{
-							dxExt1 = dx0 - 1 - SquishConstant_3D;
-							dyExt1 = dy0 - 1 - SquishConstant_3D;
-							dzExt1 = dz0 + 1 - SquishConstant_3D;
+							dxExt1 = dx0 - 1 - Squish3D;
+							dyExt1 = dy0 - 1 - Squish3D;
+							dzExt1 = dz0 + 1 - Squish3D;
 							xsvExt1 = xsb + 1;
 							ysvExt1 = ysb + 1;
 							zsvExt1 = zsb - 1;
@@ -797,36 +855,36 @@
 					// One contribution is a permutation of (1,1,-1)
 					if ((c1 & 0x01) == 0)
 					{
-						dxExt0 = dx0 + 1 - SquishConstant_3D;
-						dyExt0 = dy0 - 1 - SquishConstant_3D;
-						dzExt0 = dz0 - 1 - SquishConstant_3D;
+						dxExt0 = dx0 + 1 - Squish3D;
+						dyExt0 = dy0 - 1 - Squish3D;
+						dzExt0 = dz0 - 1 - Squish3D;
 						xsvExt0 = xsb - 1;
 						ysvExt0 = ysb + 1;
 						zsvExt0 = zsb + 1;
 					}
 					else if ((c1 & 0x02) == 0)
 					{
-						dxExt0 = dx0 - 1 - SquishConstant_3D;
-						dyExt0 = dy0 + 1 - SquishConstant_3D;
-						dzExt0 = dz0 - 1 - SquishConstant_3D;
+						dxExt0 = dx0 - 1 - Squish3D;
+						dyExt0 = dy0 + 1 - Squish3D;
+						dzExt0 = dz0 - 1 - Squish3D;
 						xsvExt0 = xsb + 1;
 						ysvExt0 = ysb - 1;
 						zsvExt0 = zsb + 1;
 					}
 					else
 					{
-						dxExt0 = dx0 - 1 - SquishConstant_3D;
-						dyExt0 = dy0 - 1 - SquishConstant_3D;
-						dzExt0 = dz0 + 1 - SquishConstant_3D;
+						dxExt0 = dx0 - 1 - Squish3D;
+						dyExt0 = dy0 - 1 - Squish3D;
+						dzExt0 = dz0 + 1 - Squish3D;
 						xsvExt0 = xsb + 1;
 						ysvExt0 = ysb + 1;
 						zsvExt0 = zsb - 1;
 					}
 
 					// One contribution is a permutation of (0,0,2)
-					dxExt1 = dx0 - 2*SquishConstant_3D;
-					dyExt1 = dy0 - 2*SquishConstant_3D;
-					dzExt1 = dz0 - 2*SquishConstant_3D;
+					dxExt1 = dx0 - 2*Squish3D;
+					dyExt1 = dy0 - 2*Squish3D;
+					dzExt1 = dz0 - 2*Squish3D;
 					xsvExt1 = xsb;
 					ysvExt1 = ysb;
 					zsvExt1 = zsb;
@@ -848,9 +906,9 @@
 				}
 
 				// Contribution (1,0,0)
-				double dx1 = dx0 - 1 - SquishConstant_3D;
-				double dy1 = dy0 - 0 - SquishConstant_3D;
-				double dz1 = dz0 - 0 - SquishConstant_3D;
+				double dx1 = dx0 - 1 - Squish3D;
+				double dy1 = dy0 - 0 - Squish3D;
+				double dz1 = dz0 - 0 - Squish3D;
 				double attn1 = 2 - dx1*dx1 - dy1*dy1 - dz1*dz1;
 				if (attn1 > 0)
 				{
@@ -859,8 +917,8 @@
 				}
 
 				// Contribution (0,1,0)
-				double dx2 = dx0 - 0 - SquishConstant_3D;
-				double dy2 = dy0 - 1 - SquishConstant_3D;
+				double dx2 = dx0 - 0 - Squish3D;
+				double dy2 = dy0 - 1 - Squish3D;
 				double dz2 = dz1;
 				double attn2 = 2 - dx2*dx2 - dy2*dy2 - dz2*dz2;
 				if (attn2 > 0)
@@ -872,7 +930,7 @@
 				// Contribution (0,0,1)
 				double dx3 = dx2;
 				double dy3 = dy1;
-				double dz3 = dz0 - 1 - SquishConstant_3D;
+				double dz3 = dz0 - 1 - Squish3D;
 				double attn3 = 2 - dx3*dx3 - dy3*dy3 - dz3*dz3;
 				if (attn3 > 0)
 				{
@@ -881,9 +939,9 @@
 				}
 
 				// Contribution (1,1,0)
-				double dx4 = dx0 - 1 - 2*SquishConstant_3D;
-				double dy4 = dy0 - 1 - 2*SquishConstant_3D;
-				double dz4 = dz0 - 0 - 2*SquishConstant_3D;
+				double dx4 = dx0 - 1 - 2*Squish3D;
+				double dy4 = dy0 - 1 - 2*Squish3D;
+				double dz4 = dz0 - 0 - 2*Squish3D;
 				double attn4 = 2 - dx4*dx4 - dy4*dy4 - dz4*dz4;
 				if (attn4 > 0)
 				{
@@ -893,8 +951,8 @@
 
 				// Contribution (1,0,1)
 				double dx5 = dx4;
-				double dy5 = dy0 - 0 - 2*SquishConstant_3D;
-				double dz5 = dz0 - 1 - 2*SquishConstant_3D;
+				double dy5 = dy0 - 0 - 2*Squish3D;
+				double dz5 = dz0 - 1 - 2*Squish3D;
 				double attn5 = 2 - dx5*dx5 - dy5*dy5 - dz5*dz5;
 				if (attn5 > 0)
 				{
@@ -903,7 +961,7 @@
 				}
 
 				// Contribution (0,1,1)
-				double dx6 = dx0 - 0 - 2*SquishConstant_3D;
+				double dx6 = dx0 - 0 - 2*Squish3D;
 				double dy6 = dy4;
 				double dz6 = dz5;
 				double attn6 = 2 - dx6*dx6 - dy6*dy6 - dz6*dz6;
@@ -930,13 +988,13 @@
 				value += attnExt1*attnExt1*Extrapolate(xsvExt1, ysvExt1, zsvExt1, dxExt1, dyExt1, dzExt1);
 			}
 
-			return value/NormConstant_3D;
+			return value/Normalization3D;
 		}
 
 		public double ComputeNoise(double x, double y, double z, double w)
 		{
 			// Place input coordinates on simplectic honeycomb.
-			double stretchOffset = (x + y + z + w)*StretchConstant_4D;
+			double stretchOffset = (x + y + z + w)*Stretch4D;
 			double xs = x + stretchOffset;
 			double ys = y + stretchOffset;
 			double zs = z + stretchOffset;
@@ -949,7 +1007,7 @@
 			int wsb = FastFloor(ws);
 
 			// Skew out to get actual coordinates of stretched rhombo-hypercube origin. We'll need these later.
-			double squishOffset = (xsb + ysb + zsb + wsb)*SquishConstant_4D;
+			double squishOffset = (xsb + ysb + zsb + wsb)*Squish4D;
 			double xb = xsb + squishOffset;
 			double yb = ysb + squishOffset;
 			double zb = zsb + squishOffset;
@@ -1101,22 +1159,22 @@
 					{
 						xsvExt0 = xsvExt2 = xsb;
 						xsvExt1 = xsb - 1;
-						dxExt0 = dx0 - 2*SquishConstant_4D;
-						dxExt1 = dx0 + 1 - SquishConstant_4D;
-						dxExt2 = dx0 - SquishConstant_4D;
+						dxExt0 = dx0 - 2*Squish4D;
+						dxExt1 = dx0 + 1 - Squish4D;
+						dxExt2 = dx0 - Squish4D;
 					}
 					else
 					{
 						xsvExt0 = xsvExt1 = xsvExt2 = xsb + 1;
-						dxExt0 = dx0 - 1 - 2*SquishConstant_4D;
-						dxExt1 = dxExt2 = dx0 - 1 - SquishConstant_4D;
+						dxExt0 = dx0 - 1 - 2*Squish4D;
+						dxExt1 = dxExt2 = dx0 - 1 - Squish4D;
 					}
 
 					if ((c & 0x02) == 0)
 					{
 						ysvExt0 = ysvExt1 = ysvExt2 = ysb;
-						dyExt0 = dy0 - 2*SquishConstant_4D;
-						dyExt1 = dyExt2 = dy0 - SquishConstant_4D;
+						dyExt0 = dy0 - 2*Squish4D;
+						dyExt1 = dyExt2 = dy0 - Squish4D;
 						if ((c & 0x01) == 0x01)
 						{
 							ysvExt1 -= 1;
@@ -1131,15 +1189,15 @@
 					else
 					{
 						ysvExt0 = ysvExt1 = ysvExt2 = ysb + 1;
-						dyExt0 = dy0 - 1 - 2*SquishConstant_4D;
-						dyExt1 = dyExt2 = dy0 - 1 - SquishConstant_4D;
+						dyExt0 = dy0 - 1 - 2*Squish4D;
+						dyExt1 = dyExt2 = dy0 - 1 - Squish4D;
 					}
 
 					if ((c & 0x04) == 0)
 					{
 						zsvExt0 = zsvExt1 = zsvExt2 = zsb;
-						dzExt0 = dz0 - 2*SquishConstant_4D;
-						dzExt1 = dzExt2 = dz0 - SquishConstant_4D;
+						dzExt0 = dz0 - 2*Squish4D;
+						dzExt1 = dzExt2 = dz0 - Squish4D;
 						if ((c & 0x03) == 0x03)
 						{
 							zsvExt1 -= 1;
@@ -1154,23 +1212,23 @@
 					else
 					{
 						zsvExt0 = zsvExt1 = zsvExt2 = zsb + 1;
-						dzExt0 = dz0 - 1 - 2*SquishConstant_4D;
-						dzExt1 = dzExt2 = dz0 - 1 - SquishConstant_4D;
+						dzExt0 = dz0 - 1 - 2*Squish4D;
+						dzExt1 = dzExt2 = dz0 - 1 - Squish4D;
 					}
 
 					if ((c & 0x08) == 0)
 					{
 						wsvExt0 = wsvExt1 = wsb;
 						wsvExt2 = wsb - 1;
-						dwExt0 = dw0 - 2*SquishConstant_4D;
-						dwExt1 = dw0 - SquishConstant_4D;
-						dwExt2 = dw0 + 1 - SquishConstant_4D;
+						dwExt0 = dw0 - 2*Squish4D;
+						dwExt1 = dw0 - Squish4D;
+						dwExt2 = dw0 + 1 - Squish4D;
 					}
 					else
 					{
 						wsvExt0 = wsvExt1 = wsvExt2 = wsb + 1;
-						dwExt0 = dw0 - 1 - 2*SquishConstant_4D;
-						dwExt1 = dwExt2 = dw0 - 1 - SquishConstant_4D;
+						dwExt0 = dw0 - 1 - 2*Squish4D;
+						dwExt1 = dwExt2 = dw0 - 1 - Squish4D;
 					}
 				}
 
@@ -1183,10 +1241,10 @@
 				}
 
 				// Contribution (1,0,0,0)
-				double dx1 = dx0 - 1 - SquishConstant_4D;
-				double dy1 = dy0 - 0 - SquishConstant_4D;
-				double dz1 = dz0 - 0 - SquishConstant_4D;
-				double dw1 = dw0 - 0 - SquishConstant_4D;
+				double dx1 = dx0 - 1 - Squish4D;
+				double dy1 = dy0 - 0 - Squish4D;
+				double dz1 = dz0 - 0 - Squish4D;
+				double dw1 = dw0 - 0 - Squish4D;
 				double attn1 = 2 - dx1*dx1 - dy1*dy1 - dz1*dz1 - dw1*dw1;
 				if (attn1 > 0)
 				{
@@ -1195,8 +1253,8 @@
 				}
 
 				// Contribution (0,1,0,0)
-				double dx2 = dx0 - 0 - SquishConstant_4D;
-				double dy2 = dy0 - 1 - SquishConstant_4D;
+				double dx2 = dx0 - 0 - Squish4D;
+				double dy2 = dy0 - 1 - Squish4D;
 				double dz2 = dz1;
 				double dw2 = dw1;
 				double attn2 = 2 - dx2*dx2 - dy2*dy2 - dz2*dz2 - dw2*dw2;
@@ -1209,7 +1267,7 @@
 				// Contribution (0,0,1,0)
 				double dx3 = dx2;
 				double dy3 = dy1;
-				double dz3 = dz0 - 1 - SquishConstant_4D;
+				double dz3 = dz0 - 1 - Squish4D;
 				double dw3 = dw1;
 				double attn3 = 2 - dx3*dx3 - dy3*dy3 - dz3*dz3 - dw3*dw3;
 				if (attn3 > 0)
@@ -1222,7 +1280,7 @@
 				double dx4 = dx2;
 				double dy4 = dy1;
 				double dz4 = dz1;
-				double dw4 = dw0 - 1 - SquishConstant_4D;
+				double dw4 = dw0 - 1 - Squish4D;
 				double attn4 = 2 - dx4*dx4 - dy4*dy4 - dz4*dz4 - dw4*dw4;
 				if (attn4 > 0)
 				{
@@ -1271,19 +1329,19 @@
 					{
 						xsvExt0 = xsb + 2;
 						xsvExt1 = xsvExt2 = xsb + 1;
-						dxExt0 = dx0 - 2 - 4*SquishConstant_4D;
-						dxExt1 = dxExt2 = dx0 - 1 - 4*SquishConstant_4D;
+						dxExt0 = dx0 - 2 - 4*Squish4D;
+						dxExt1 = dxExt2 = dx0 - 1 - 4*Squish4D;
 					}
 					else
 					{
 						xsvExt0 = xsvExt1 = xsvExt2 = xsb;
-						dxExt0 = dxExt1 = dxExt2 = dx0 - 4*SquishConstant_4D;
+						dxExt0 = dxExt1 = dxExt2 = dx0 - 4*Squish4D;
 					}
 
 					if ((c & 0x02) != 0)
 					{
 						ysvExt0 = ysvExt1 = ysvExt2 = ysb + 1;
-						dyExt0 = dyExt1 = dyExt2 = dy0 - 1 - 4*SquishConstant_4D;
+						dyExt0 = dyExt1 = dyExt2 = dy0 - 1 - 4*Squish4D;
 						if ((c & 0x01) != 0)
 						{
 							ysvExt1 += 1;
@@ -1298,13 +1356,13 @@
 					else
 					{
 						ysvExt0 = ysvExt1 = ysvExt2 = ysb;
-						dyExt0 = dyExt1 = dyExt2 = dy0 - 4*SquishConstant_4D;
+						dyExt0 = dyExt1 = dyExt2 = dy0 - 4*Squish4D;
 					}
 
 					if ((c & 0x04) != 0)
 					{
 						zsvExt0 = zsvExt1 = zsvExt2 = zsb + 1;
-						dzExt0 = dzExt1 = dzExt2 = dz0 - 1 - 4*SquishConstant_4D;
+						dzExt0 = dzExt1 = dzExt2 = dz0 - 1 - 4*Squish4D;
 						if ((c & 0x03) != 0x03)
 						{
 							if ((c & 0x03) == 0)
@@ -1327,20 +1385,20 @@
 					else
 					{
 						zsvExt0 = zsvExt1 = zsvExt2 = zsb;
-						dzExt0 = dzExt1 = dzExt2 = dz0 - 4*SquishConstant_4D;
+						dzExt0 = dzExt1 = dzExt2 = dz0 - 4*Squish4D;
 					}
 
 					if ((c & 0x08) != 0)
 					{
 						wsvExt0 = wsvExt1 = wsb + 1;
 						wsvExt2 = wsb + 2;
-						dwExt0 = dwExt1 = dw0 - 1 - 4*SquishConstant_4D;
-						dwExt2 = dw0 - 2 - 4*SquishConstant_4D;
+						dwExt0 = dwExt1 = dw0 - 1 - 4*Squish4D;
+						dwExt2 = dw0 - 2 - 4*Squish4D;
 					}
 					else
 					{
 						wsvExt0 = wsvExt1 = wsvExt2 = wsb;
-						dwExt0 = dwExt1 = dwExt2 = dw0 - 4*SquishConstant_4D;
+						dwExt0 = dwExt1 = dwExt2 = dw0 - 4*Squish4D;
 					}
 				}
 				else
@@ -1352,22 +1410,22 @@
 					{
 						xsvExt0 = xsvExt2 = xsb + 1;
 						xsvExt1 = xsb + 2;
-						dxExt0 = dx0 - 1 - 2*SquishConstant_4D;
-						dxExt1 = dx0 - 2 - 3*SquishConstant_4D;
-						dxExt2 = dx0 - 1 - 3*SquishConstant_4D;
+						dxExt0 = dx0 - 1 - 2*Squish4D;
+						dxExt1 = dx0 - 2 - 3*Squish4D;
+						dxExt2 = dx0 - 1 - 3*Squish4D;
 					}
 					else
 					{
 						xsvExt0 = xsvExt1 = xsvExt2 = xsb;
-						dxExt0 = dx0 - 2*SquishConstant_4D;
-						dxExt1 = dxExt2 = dx0 - 3*SquishConstant_4D;
+						dxExt0 = dx0 - 2*Squish4D;
+						dxExt1 = dxExt2 = dx0 - 3*Squish4D;
 					}
 
 					if ((c & 0x02) != 0)
 					{
 						ysvExt0 = ysvExt1 = ysvExt2 = ysb + 1;
-						dyExt0 = dy0 - 1 - 2*SquishConstant_4D;
-						dyExt1 = dyExt2 = dy0 - 1 - 3*SquishConstant_4D;
+						dyExt0 = dy0 - 1 - 2*Squish4D;
+						dyExt1 = dyExt2 = dy0 - 1 - 3*Squish4D;
 						if ((c & 0x01) != 0)
 						{
 							ysvExt2 += 1;
@@ -1382,15 +1440,15 @@
 					else
 					{
 						ysvExt0 = ysvExt1 = ysvExt2 = ysb;
-						dyExt0 = dy0 - 2*SquishConstant_4D;
-						dyExt1 = dyExt2 = dy0 - 3*SquishConstant_4D;
+						dyExt0 = dy0 - 2*Squish4D;
+						dyExt1 = dyExt2 = dy0 - 3*Squish4D;
 					}
 
 					if ((c & 0x04) != 0)
 					{
 						zsvExt0 = zsvExt1 = zsvExt2 = zsb + 1;
-						dzExt0 = dz0 - 1 - 2*SquishConstant_4D;
-						dzExt1 = dzExt2 = dz0 - 1 - 3*SquishConstant_4D;
+						dzExt0 = dz0 - 1 - 2*Squish4D;
+						dzExt1 = dzExt2 = dz0 - 1 - 3*Squish4D;
 						if ((c & 0x03) != 0)
 						{
 							zsvExt2 += 1;
@@ -1405,31 +1463,31 @@
 					else
 					{
 						zsvExt0 = zsvExt1 = zsvExt2 = zsb;
-						dzExt0 = dz0 - 2*SquishConstant_4D;
-						dzExt1 = dzExt2 = dz0 - 3*SquishConstant_4D;
+						dzExt0 = dz0 - 2*Squish4D;
+						dzExt1 = dzExt2 = dz0 - 3*Squish4D;
 					}
 
 					if ((c & 0x08) != 0)
 					{
 						wsvExt0 = wsvExt1 = wsb + 1;
 						wsvExt2 = wsb + 2;
-						dwExt0 = dw0 - 1 - 2*SquishConstant_4D;
-						dwExt1 = dw0 - 1 - 3*SquishConstant_4D;
-						dwExt2 = dw0 - 2 - 3*SquishConstant_4D;
+						dwExt0 = dw0 - 1 - 2*Squish4D;
+						dwExt1 = dw0 - 1 - 3*Squish4D;
+						dwExt2 = dw0 - 2 - 3*Squish4D;
 					}
 					else
 					{
 						wsvExt0 = wsvExt1 = wsvExt2 = wsb;
-						dwExt0 = dw0 - 2*SquishConstant_4D;
-						dwExt1 = dwExt2 = dw0 - 3*SquishConstant_4D;
+						dwExt0 = dw0 - 2*Squish4D;
+						dwExt1 = dwExt2 = dw0 - 3*Squish4D;
 					}
 				}
 
 				// Contribution (1,1,1,0)
-				double dx4 = dx0 - 1 - 3*SquishConstant_4D;
-				double dy4 = dy0 - 1 - 3*SquishConstant_4D;
-				double dz4 = dz0 - 1 - 3*SquishConstant_4D;
-				double dw4 = dw0 - 3*SquishConstant_4D;
+				double dx4 = dx0 - 1 - 3*Squish4D;
+				double dy4 = dy0 - 1 - 3*Squish4D;
+				double dz4 = dz0 - 1 - 3*Squish4D;
+				double dw4 = dw0 - 3*Squish4D;
 				double attn4 = 2 - dx4*dx4 - dy4*dy4 - dz4*dz4 - dw4*dw4;
 				if (attn4 > 0)
 				{
@@ -1440,8 +1498,8 @@
 				// Contribution (1,1,0,1)
 				double dx3 = dx4;
 				double dy3 = dy4;
-				double dz3 = dz0 - 3*SquishConstant_4D;
-				double dw3 = dw0 - 1 - 3*SquishConstant_4D;
+				double dz3 = dz0 - 3*Squish4D;
+				double dw3 = dw0 - 1 - 3*Squish4D;
 				double attn3 = 2 - dx3*dx3 - dy3*dy3 - dz3*dz3 - dw3*dw3;
 				if (attn3 > 0)
 				{
@@ -1451,7 +1509,7 @@
 
 				// Contribution (1,0,1,1)
 				double dx2 = dx4;
-				double dy2 = dy0 - 3*SquishConstant_4D;
+				double dy2 = dy0 - 3*Squish4D;
 				double dz2 = dz4;
 				double dw2 = dw3;
 				double attn2 = 2 - dx2*dx2 - dy2*dy2 - dz2*dz2 - dw2*dw2;
@@ -1462,7 +1520,7 @@
 				}
 
 				// Contribution (0,1,1,1)
-				double dx1 = dx0 - 3*SquishConstant_4D;
+				double dx1 = dx0 - 3*Squish4D;
 				double dz1 = dz4;
 				double dy1 = dy4;
 				double dw1 = dw3;
@@ -1474,10 +1532,10 @@
 				}
 
 				// Contribution (1,1,1,1)
-				dx0 = dx0 - 1 - 4*SquishConstant_4D;
-				dy0 = dy0 - 1 - 4*SquishConstant_4D;
-				dz0 = dz0 - 1 - 4*SquishConstant_4D;
-				dw0 = dw0 - 1 - 4*SquishConstant_4D;
+				dx0 = dx0 - 1 - 4*Squish4D;
+				dy0 = dy0 - 1 - 4*Squish4D;
+				dz0 = dz0 - 1 - 4*Squish4D;
+				dw0 = dw0 - 1 - 4*Squish4D;
 				double attn0 = 2 - dx0*dx0 - dy0*dy0 - dz0*dz0 - dw0*dw0;
 				if (attn0 > 0)
 				{
@@ -1621,56 +1679,56 @@
 						{
 							xsvExt0 = xsb;
 							xsvExt1 = xsb - 1;
-							dxExt0 = dx0 - 3*SquishConstant_4D;
-							dxExt1 = dx0 + 1 - 2*SquishConstant_4D;
+							dxExt0 = dx0 - 3*Squish4D;
+							dxExt1 = dx0 + 1 - 2*Squish4D;
 						}
 						else
 						{
 							xsvExt0 = xsvExt1 = xsb + 1;
-							dxExt0 = dx0 - 1 - 3*SquishConstant_4D;
-							dxExt1 = dx0 - 1 - 2*SquishConstant_4D;
+							dxExt0 = dx0 - 1 - 3*Squish4D;
+							dxExt1 = dx0 - 1 - 2*Squish4D;
 						}
 
 						if ((c1 & 0x02) == 0)
 						{
 							ysvExt0 = ysb;
 							ysvExt1 = ysb - 1;
-							dyExt0 = dy0 - 3*SquishConstant_4D;
-							dyExt1 = dy0 + 1 - 2*SquishConstant_4D;
+							dyExt0 = dy0 - 3*Squish4D;
+							dyExt1 = dy0 + 1 - 2*Squish4D;
 						}
 						else
 						{
 							ysvExt0 = ysvExt1 = ysb + 1;
-							dyExt0 = dy0 - 1 - 3*SquishConstant_4D;
-							dyExt1 = dy0 - 1 - 2*SquishConstant_4D;
+							dyExt0 = dy0 - 1 - 3*Squish4D;
+							dyExt1 = dy0 - 1 - 2*Squish4D;
 						}
 
 						if ((c1 & 0x04) == 0)
 						{
 							zsvExt0 = zsb;
 							zsvExt1 = zsb - 1;
-							dzExt0 = dz0 - 3*SquishConstant_4D;
-							dzExt1 = dz0 + 1 - 2*SquishConstant_4D;
+							dzExt0 = dz0 - 3*Squish4D;
+							dzExt1 = dz0 + 1 - 2*Squish4D;
 						}
 						else
 						{
 							zsvExt0 = zsvExt1 = zsb + 1;
-							dzExt0 = dz0 - 1 - 3*SquishConstant_4D;
-							dzExt1 = dz0 - 1 - 2*SquishConstant_4D;
+							dzExt0 = dz0 - 1 - 3*Squish4D;
+							dzExt1 = dz0 - 1 - 2*Squish4D;
 						}
 
 						if ((c1 & 0x08) == 0)
 						{
 							wsvExt0 = wsb;
 							wsvExt1 = wsb - 1;
-							dwExt0 = dw0 - 3*SquishConstant_4D;
-							dwExt1 = dw0 + 1 - 2*SquishConstant_4D;
+							dwExt0 = dw0 - 3*Squish4D;
+							dwExt1 = dw0 + 1 - 2*Squish4D;
 						}
 						else
 						{
 							wsvExt0 = wsvExt1 = wsb + 1;
-							dwExt0 = dw0 - 1 - 3*SquishConstant_4D;
-							dwExt1 = dw0 - 1 - 2*SquishConstant_4D;
+							dwExt0 = dw0 - 1 - 3*Squish4D;
+							dwExt1 = dw0 - 1 - 2*Squish4D;
 						}
 
 						// One combination is a permutation of (0,0,0,2) based on c2
@@ -1678,10 +1736,10 @@
 						ysvExt2 = ysb;
 						zsvExt2 = zsb;
 						wsvExt2 = wsb;
-						dxExt2 = dx0 - 2*SquishConstant_4D;
-						dyExt2 = dy0 - 2*SquishConstant_4D;
-						dzExt2 = dz0 - 2*SquishConstant_4D;
-						dwExt2 = dw0 - 2*SquishConstant_4D;
+						dxExt2 = dx0 - 2*Squish4D;
+						dyExt2 = dy0 - 2*Squish4D;
+						dzExt2 = dz0 - 2*Squish4D;
+						dwExt2 = dw0 - 2*Squish4D;
 						if ((c2 & 0x01) != 0)
 						{
 							xsvExt2 += 2;
@@ -1723,19 +1781,19 @@
 						{
 							xsvExt0 = xsb - 1;
 							xsvExt1 = xsb;
-							dxExt0 = dx0 + 1 - SquishConstant_4D;
-							dxExt1 = dx0 - SquishConstant_4D;
+							dxExt0 = dx0 + 1 - Squish4D;
+							dxExt1 = dx0 - Squish4D;
 						}
 						else
 						{
 							xsvExt0 = xsvExt1 = xsb + 1;
-							dxExt0 = dxExt1 = dx0 - 1 - SquishConstant_4D;
+							dxExt0 = dxExt1 = dx0 - 1 - Squish4D;
 						}
 
 						if ((c & 0x02) == 0)
 						{
 							ysvExt0 = ysvExt1 = ysb;
-							dyExt0 = dyExt1 = dy0 - SquishConstant_4D;
+							dyExt0 = dyExt1 = dy0 - Squish4D;
 							if ((c & 0x01) == 0x01)
 							{
 								ysvExt0 -= 1;
@@ -1750,13 +1808,13 @@
 						else
 						{
 							ysvExt0 = ysvExt1 = ysb + 1;
-							dyExt0 = dyExt1 = dy0 - 1 - SquishConstant_4D;
+							dyExt0 = dyExt1 = dy0 - 1 - Squish4D;
 						}
 
 						if ((c & 0x04) == 0)
 						{
 							zsvExt0 = zsvExt1 = zsb;
-							dzExt0 = dzExt1 = dz0 - SquishConstant_4D;
+							dzExt0 = dzExt1 = dz0 - Squish4D;
 							if ((c & 0x03) == 0x03)
 							{
 								zsvExt0 -= 1;
@@ -1771,20 +1829,20 @@
 						else
 						{
 							zsvExt0 = zsvExt1 = zsb + 1;
-							dzExt0 = dzExt1 = dz0 - 1 - SquishConstant_4D;
+							dzExt0 = dzExt1 = dz0 - 1 - Squish4D;
 						}
 
 						if ((c & 0x08) == 0)
 						{
 							wsvExt0 = wsb;
 							wsvExt1 = wsb - 1;
-							dwExt0 = dw0 - SquishConstant_4D;
-							dwExt1 = dw0 + 1 - SquishConstant_4D;
+							dwExt0 = dw0 - Squish4D;
+							dwExt1 = dw0 + 1 - Squish4D;
 						}
 						else
 						{
 							wsvExt0 = wsvExt1 = wsb + 1;
-							dwExt0 = dwExt1 = dw0 - 1 - SquishConstant_4D;
+							dwExt0 = dwExt1 = dw0 - 1 - Squish4D;
 						}
 					}
 				}
@@ -1808,19 +1866,19 @@
 					{
 						xsvExt0 = xsb - 1;
 						xsvExt1 = xsb;
-						dxExt0 = dx0 + 1 - SquishConstant_4D;
-						dxExt1 = dx0 - SquishConstant_4D;
+						dxExt0 = dx0 + 1 - Squish4D;
+						dxExt1 = dx0 - Squish4D;
 					}
 					else
 					{
 						xsvExt0 = xsvExt1 = xsb + 1;
-						dxExt0 = dxExt1 = dx0 - 1 - SquishConstant_4D;
+						dxExt0 = dxExt1 = dx0 - 1 - Squish4D;
 					}
 
 					if ((c1 & 0x02) == 0)
 					{
 						ysvExt0 = ysvExt1 = ysb;
-						dyExt0 = dyExt1 = dy0 - SquishConstant_4D;
+						dyExt0 = dyExt1 = dy0 - Squish4D;
 						if ((c1 & 0x01) == 0x01)
 						{
 							ysvExt0 -= 1;
@@ -1835,13 +1893,13 @@
 					else
 					{
 						ysvExt0 = ysvExt1 = ysb + 1;
-						dyExt0 = dyExt1 = dy0 - 1 - SquishConstant_4D;
+						dyExt0 = dyExt1 = dy0 - 1 - Squish4D;
 					}
 
 					if ((c1 & 0x04) == 0)
 					{
 						zsvExt0 = zsvExt1 = zsb;
-						dzExt0 = dzExt1 = dz0 - SquishConstant_4D;
+						dzExt0 = dzExt1 = dz0 - Squish4D;
 						if ((c1 & 0x03) == 0x03)
 						{
 							zsvExt0 -= 1;
@@ -1856,20 +1914,20 @@
 					else
 					{
 						zsvExt0 = zsvExt1 = zsb + 1;
-						dzExt0 = dzExt1 = dz0 - 1 - SquishConstant_4D;
+						dzExt0 = dzExt1 = dz0 - 1 - Squish4D;
 					}
 
 					if ((c1 & 0x08) == 0)
 					{
 						wsvExt0 = wsb;
 						wsvExt1 = wsb - 1;
-						dwExt0 = dw0 - SquishConstant_4D;
-						dwExt1 = dw0 + 1 - SquishConstant_4D;
+						dwExt0 = dw0 - Squish4D;
+						dwExt1 = dw0 + 1 - Squish4D;
 					}
 					else
 					{
 						wsvExt0 = wsvExt1 = wsb + 1;
-						dwExt0 = dwExt1 = dw0 - 1 - SquishConstant_4D;
+						dwExt0 = dwExt1 = dw0 - 1 - Squish4D;
 					}
 
 					// One contribution is a permutation of (0,0,0,2) based on the smaller-sided point
@@ -1877,10 +1935,10 @@
 					ysvExt2 = ysb;
 					zsvExt2 = zsb;
 					wsvExt2 = wsb;
-					dxExt2 = dx0 - 2*SquishConstant_4D;
-					dyExt2 = dy0 - 2*SquishConstant_4D;
-					dzExt2 = dz0 - 2*SquishConstant_4D;
-					dwExt2 = dw0 - 2*SquishConstant_4D;
+					dxExt2 = dx0 - 2*Squish4D;
+					dyExt2 = dy0 - 2*Squish4D;
+					dzExt2 = dz0 - 2*Squish4D;
+					dwExt2 = dw0 - 2*Squish4D;
 					if ((c2 & 0x01) != 0)
 					{
 						xsvExt2 += 2;
@@ -1904,10 +1962,10 @@
 				}
 
 				// Contribution (1,0,0,0)
-				double dx1 = dx0 - 1 - SquishConstant_4D;
-				double dy1 = dy0 - 0 - SquishConstant_4D;
-				double dz1 = dz0 - 0 - SquishConstant_4D;
-				double dw1 = dw0 - 0 - SquishConstant_4D;
+				double dx1 = dx0 - 1 - Squish4D;
+				double dy1 = dy0 - 0 - Squish4D;
+				double dz1 = dz0 - 0 - Squish4D;
+				double dw1 = dw0 - 0 - Squish4D;
 				double attn1 = 2 - dx1*dx1 - dy1*dy1 - dz1*dz1 - dw1*dw1;
 				if (attn1 > 0)
 				{
@@ -1916,8 +1974,8 @@
 				}
 
 				// Contribution (0,1,0,0)
-				double dx2 = dx0 - 0 - SquishConstant_4D;
-				double dy2 = dy0 - 1 - SquishConstant_4D;
+				double dx2 = dx0 - 0 - Squish4D;
+				double dy2 = dy0 - 1 - Squish4D;
 				double dz2 = dz1;
 				double dw2 = dw1;
 				double attn2 = 2 - dx2*dx2 - dy2*dy2 - dz2*dz2 - dw2*dw2;
@@ -1930,7 +1988,7 @@
 				// Contribution (0,0,1,0)
 				double dx3 = dx2;
 				double dy3 = dy1;
-				double dz3 = dz0 - 1 - SquishConstant_4D;
+				double dz3 = dz0 - 1 - Squish4D;
 				double dw3 = dw1;
 				double attn3 = 2 - dx3*dx3 - dy3*dy3 - dz3*dz3 - dw3*dw3;
 				if (attn3 > 0)
@@ -1943,7 +2001,7 @@
 				double dx4 = dx2;
 				double dy4 = dy1;
 				double dz4 = dz1;
-				double dw4 = dw0 - 1 - SquishConstant_4D;
+				double dw4 = dw0 - 1 - Squish4D;
 				double attn4 = 2 - dx4*dx4 - dy4*dy4 - dz4*dz4 - dw4*dw4;
 				if (attn4 > 0)
 				{
@@ -1952,10 +2010,10 @@
 				}
 
 				// Contribution (1,1,0,0)
-				double dx5 = dx0 - 1 - 2*SquishConstant_4D;
-				double dy5 = dy0 - 1 - 2*SquishConstant_4D;
-				double dz5 = dz0 - 0 - 2*SquishConstant_4D;
-				double dw5 = dw0 - 0 - 2*SquishConstant_4D;
+				double dx5 = dx0 - 1 - 2*Squish4D;
+				double dy5 = dy0 - 1 - 2*Squish4D;
+				double dz5 = dz0 - 0 - 2*Squish4D;
+				double dw5 = dw0 - 0 - 2*Squish4D;
 				double attn5 = 2 - dx5*dx5 - dy5*dy5 - dz5*dz5 - dw5*dw5;
 				if (attn5 > 0)
 				{
@@ -1964,10 +2022,10 @@
 				}
 
 				// Contribution (1,0,1,0)
-				double dx6 = dx0 - 1 - 2*SquishConstant_4D;
-				double dy6 = dy0 - 0 - 2*SquishConstant_4D;
-				double dz6 = dz0 - 1 - 2*SquishConstant_4D;
-				double dw6 = dw0 - 0 - 2*SquishConstant_4D;
+				double dx6 = dx0 - 1 - 2*Squish4D;
+				double dy6 = dy0 - 0 - 2*Squish4D;
+				double dz6 = dz0 - 1 - 2*Squish4D;
+				double dw6 = dw0 - 0 - 2*Squish4D;
 				double attn6 = 2 - dx6*dx6 - dy6*dy6 - dz6*dz6 - dw6*dw6;
 				if (attn6 > 0)
 				{
@@ -1976,10 +2034,10 @@
 				}
 
 				// Contribution (1,0,0,1)
-				double dx7 = dx0 - 1 - 2*SquishConstant_4D;
-				double dy7 = dy0 - 0 - 2*SquishConstant_4D;
-				double dz7 = dz0 - 0 - 2*SquishConstant_4D;
-				double dw7 = dw0 - 1 - 2*SquishConstant_4D;
+				double dx7 = dx0 - 1 - 2*Squish4D;
+				double dy7 = dy0 - 0 - 2*Squish4D;
+				double dz7 = dz0 - 0 - 2*Squish4D;
+				double dw7 = dw0 - 1 - 2*Squish4D;
 				double attn7 = 2 - dx7*dx7 - dy7*dy7 - dz7*dz7 - dw7*dw7;
 				if (attn7 > 0)
 				{
@@ -1988,10 +2046,10 @@
 				}
 
 				// Contribution (0,1,1,0)
-				double dx8 = dx0 - 0 - 2*SquishConstant_4D;
-				double dy8 = dy0 - 1 - 2*SquishConstant_4D;
-				double dz8 = dz0 - 1 - 2*SquishConstant_4D;
-				double dw8 = dw0 - 0 - 2*SquishConstant_4D;
+				double dx8 = dx0 - 0 - 2*Squish4D;
+				double dy8 = dy0 - 1 - 2*Squish4D;
+				double dz8 = dz0 - 1 - 2*Squish4D;
+				double dw8 = dw0 - 0 - 2*Squish4D;
 				double attn8 = 2 - dx8*dx8 - dy8*dy8 - dz8*dz8 - dw8*dw8;
 				if (attn8 > 0)
 				{
@@ -2000,10 +2058,10 @@
 				}
 
 				// Contribution (0,1,0,1)
-				double dx9 = dx0 - 0 - 2*SquishConstant_4D;
-				double dy9 = dy0 - 1 - 2*SquishConstant_4D;
-				double dz9 = dz0 - 0 - 2*SquishConstant_4D;
-				double dw9 = dw0 - 1 - 2*SquishConstant_4D;
+				double dx9 = dx0 - 0 - 2*Squish4D;
+				double dy9 = dy0 - 1 - 2*Squish4D;
+				double dz9 = dz0 - 0 - 2*Squish4D;
+				double dw9 = dw0 - 1 - 2*Squish4D;
 				double attn9 = 2 - dx9*dx9 - dy9*dy9 - dz9*dz9 - dw9*dw9;
 				if (attn9 > 0)
 				{
@@ -2012,10 +2070,10 @@
 				}
 
 				// Contribution (0,0,1,1)
-				double dx10 = dx0 - 0 - 2*SquishConstant_4D;
-				double dy10 = dy0 - 0 - 2*SquishConstant_4D;
-				double dz10 = dz0 - 1 - 2*SquishConstant_4D;
-				double dw10 = dw0 - 1 - 2*SquishConstant_4D;
+				double dx10 = dx0 - 0 - 2*Squish4D;
+				double dy10 = dy0 - 0 - 2*Squish4D;
+				double dz10 = dz0 - 1 - 2*Squish4D;
+				double dw10 = dw0 - 1 - 2*Squish4D;
 				double attn10 = 2 - dx10*dx10 - dy10*dy10 - dz10*dz10 - dw10*dw10;
 				if (attn10 > 0)
 				{
@@ -2161,14 +2219,14 @@
 						ysvExt0 = ysvExt1 = ysb;
 						zsvExt0 = zsvExt1 = zsb;
 						wsvExt0 = wsvExt1 = wsb;
-						dxExt0 = dx0 - SquishConstant_4D;
-						dyExt0 = dy0 - SquishConstant_4D;
-						dzExt0 = dz0 - SquishConstant_4D;
-						dwExt0 = dw0 - SquishConstant_4D;
-						dxExt1 = dx0 - 2*SquishConstant_4D;
-						dyExt1 = dy0 - 2*SquishConstant_4D;
-						dzExt1 = dz0 - 2*SquishConstant_4D;
-						dwExt1 = dw0 - 2*SquishConstant_4D;
+						dxExt0 = dx0 - Squish4D;
+						dyExt0 = dy0 - Squish4D;
+						dzExt0 = dz0 - Squish4D;
+						dwExt0 = dw0 - Squish4D;
+						dxExt1 = dx0 - 2*Squish4D;
+						dyExt1 = dy0 - 2*Squish4D;
+						dzExt1 = dz0 - 2*Squish4D;
+						dwExt1 = dw0 - 2*Squish4D;
 						if ((c1 & 0x01) != 0)
 						{
 							xsvExt0 += 1;
@@ -2203,10 +2261,10 @@
 						ysvExt2 = ysb + 1;
 						zsvExt2 = zsb + 1;
 						wsvExt2 = wsb + 1;
-						dxExt2 = dx0 - 1 - 2*SquishConstant_4D;
-						dyExt2 = dy0 - 1 - 2*SquishConstant_4D;
-						dzExt2 = dz0 - 1 - 2*SquishConstant_4D;
-						dwExt2 = dw0 - 1 - 2*SquishConstant_4D;
+						dxExt2 = dx0 - 1 - 2*Squish4D;
+						dyExt2 = dy0 - 1 - 2*Squish4D;
+						dzExt2 = dz0 - 1 - 2*Squish4D;
+						dwExt2 = dw0 - 1 - 2*Squish4D;
 						if ((c2 & 0x01) == 0)
 						{
 							xsvExt2 -= 2;
@@ -2236,10 +2294,10 @@
 						ysvExt2 = ysb + 1;
 						zsvExt2 = zsb + 1;
 						wsvExt2 = wsb + 1;
-						dxExt2 = dx0 - 1 - 4*SquishConstant_4D;
-						dyExt2 = dy0 - 1 - 4*SquishConstant_4D;
-						dzExt2 = dz0 - 1 - 4*SquishConstant_4D;
-						dwExt2 = dw0 - 1 - 4*SquishConstant_4D;
+						dxExt2 = dx0 - 1 - 4*Squish4D;
+						dyExt2 = dy0 - 1 - 4*Squish4D;
+						dzExt2 = dz0 - 1 - 4*Squish4D;
+						dwExt2 = dw0 - 1 - 4*Squish4D;
 
 						// Other two points are based on the shared axes.
 						var c = (byte) (aPoint & bPoint);
@@ -2248,19 +2306,19 @@
 						{
 							xsvExt0 = xsb + 2;
 							xsvExt1 = xsb + 1;
-							dxExt0 = dx0 - 2 - 3*SquishConstant_4D;
-							dxExt1 = dx0 - 1 - 3*SquishConstant_4D;
+							dxExt0 = dx0 - 2 - 3*Squish4D;
+							dxExt1 = dx0 - 1 - 3*Squish4D;
 						}
 						else
 						{
 							xsvExt0 = xsvExt1 = xsb;
-							dxExt0 = dxExt1 = dx0 - 3*SquishConstant_4D;
+							dxExt0 = dxExt1 = dx0 - 3*Squish4D;
 						}
 
 						if ((c & 0x02) != 0)
 						{
 							ysvExt0 = ysvExt1 = ysb + 1;
-							dyExt0 = dyExt1 = dy0 - 1 - 3*SquishConstant_4D;
+							dyExt0 = dyExt1 = dy0 - 1 - 3*Squish4D;
 							if ((c & 0x01) == 0)
 							{
 								ysvExt0 += 1;
@@ -2275,13 +2333,13 @@
 						else
 						{
 							ysvExt0 = ysvExt1 = ysb;
-							dyExt0 = dyExt1 = dy0 - 3*SquishConstant_4D;
+							dyExt0 = dyExt1 = dy0 - 3*Squish4D;
 						}
 
 						if ((c & 0x04) != 0)
 						{
 							zsvExt0 = zsvExt1 = zsb + 1;
-							dzExt0 = dzExt1 = dz0 - 1 - 3*SquishConstant_4D;
+							dzExt0 = dzExt1 = dz0 - 1 - 3*Squish4D;
 							if ((c & 0x03) == 0)
 							{
 								zsvExt0 += 1;
@@ -2296,20 +2354,20 @@
 						else
 						{
 							zsvExt0 = zsvExt1 = zsb;
-							dzExt0 = dzExt1 = dz0 - 3*SquishConstant_4D;
+							dzExt0 = dzExt1 = dz0 - 3*Squish4D;
 						}
 
 						if ((c & 0x08) != 0)
 						{
 							wsvExt0 = wsb + 1;
 							wsvExt1 = wsb + 2;
-							dwExt0 = dw0 - 1 - 3*SquishConstant_4D;
-							dwExt1 = dw0 - 2 - 3*SquishConstant_4D;
+							dwExt0 = dw0 - 1 - 3*Squish4D;
+							dwExt1 = dw0 - 2 - 3*Squish4D;
 						}
 						else
 						{
 							wsvExt0 = wsvExt1 = wsb;
-							dwExt0 = dwExt1 = dw0 - 3*SquishConstant_4D;
+							dwExt0 = dwExt1 = dw0 - 3*Squish4D;
 						}
 					}
 				}
@@ -2333,19 +2391,19 @@
 					{
 						xsvExt0 = xsb + 2;
 						xsvExt1 = xsb + 1;
-						dxExt0 = dx0 - 2 - 3*SquishConstant_4D;
-						dxExt1 = dx0 - 1 - 3*SquishConstant_4D;
+						dxExt0 = dx0 - 2 - 3*Squish4D;
+						dxExt1 = dx0 - 1 - 3*Squish4D;
 					}
 					else
 					{
 						xsvExt0 = xsvExt1 = xsb;
-						dxExt0 = dxExt1 = dx0 - 3*SquishConstant_4D;
+						dxExt0 = dxExt1 = dx0 - 3*Squish4D;
 					}
 
 					if ((c1 & 0x02) != 0)
 					{
 						ysvExt0 = ysvExt1 = ysb + 1;
-						dyExt0 = dyExt1 = dy0 - 1 - 3*SquishConstant_4D;
+						dyExt0 = dyExt1 = dy0 - 1 - 3*Squish4D;
 						if ((c1 & 0x01) == 0)
 						{
 							ysvExt0 += 1;
@@ -2360,13 +2418,13 @@
 					else
 					{
 						ysvExt0 = ysvExt1 = ysb;
-						dyExt0 = dyExt1 = dy0 - 3*SquishConstant_4D;
+						dyExt0 = dyExt1 = dy0 - 3*Squish4D;
 					}
 
 					if ((c1 & 0x04) != 0)
 					{
 						zsvExt0 = zsvExt1 = zsb + 1;
-						dzExt0 = dzExt1 = dz0 - 1 - 3*SquishConstant_4D;
+						dzExt0 = dzExt1 = dz0 - 1 - 3*Squish4D;
 						if ((c1 & 0x03) == 0)
 						{
 							zsvExt0 += 1;
@@ -2381,20 +2439,20 @@
 					else
 					{
 						zsvExt0 = zsvExt1 = zsb;
-						dzExt0 = dzExt1 = dz0 - 3*SquishConstant_4D;
+						dzExt0 = dzExt1 = dz0 - 3*Squish4D;
 					}
 
 					if ((c1 & 0x08) != 0)
 					{
 						wsvExt0 = wsb + 1;
 						wsvExt1 = wsb + 2;
-						dwExt0 = dw0 - 1 - 3*SquishConstant_4D;
-						dwExt1 = dw0 - 2 - 3*SquishConstant_4D;
+						dwExt0 = dw0 - 1 - 3*Squish4D;
+						dwExt1 = dw0 - 2 - 3*Squish4D;
 					}
 					else
 					{
 						wsvExt0 = wsvExt1 = wsb;
-						dwExt0 = dwExt1 = dw0 - 3*SquishConstant_4D;
+						dwExt0 = dwExt1 = dw0 - 3*Squish4D;
 					}
 
 					// One contribution is a permutation of (1,1,1,-1) based on the smaller-sided point
@@ -2402,10 +2460,10 @@
 					ysvExt2 = ysb + 1;
 					zsvExt2 = zsb + 1;
 					wsvExt2 = wsb + 1;
-					dxExt2 = dx0 - 1 - 2*SquishConstant_4D;
-					dyExt2 = dy0 - 1 - 2*SquishConstant_4D;
-					dzExt2 = dz0 - 1 - 2*SquishConstant_4D;
-					dwExt2 = dw0 - 1 - 2*SquishConstant_4D;
+					dxExt2 = dx0 - 1 - 2*Squish4D;
+					dyExt2 = dy0 - 1 - 2*Squish4D;
+					dzExt2 = dz0 - 1 - 2*Squish4D;
+					dwExt2 = dw0 - 1 - 2*Squish4D;
 					if ((c2 & 0x01) == 0)
 					{
 						xsvExt2 -= 2;
@@ -2429,10 +2487,10 @@
 				}
 
 				// Contribution (1,1,1,0)
-				double dx4 = dx0 - 1 - 3*SquishConstant_4D;
-				double dy4 = dy0 - 1 - 3*SquishConstant_4D;
-				double dz4 = dz0 - 1 - 3*SquishConstant_4D;
-				double dw4 = dw0 - 3*SquishConstant_4D;
+				double dx4 = dx0 - 1 - 3*Squish4D;
+				double dy4 = dy0 - 1 - 3*Squish4D;
+				double dz4 = dz0 - 1 - 3*Squish4D;
+				double dw4 = dw0 - 3*Squish4D;
 				double attn4 = 2 - dx4*dx4 - dy4*dy4 - dz4*dz4 - dw4*dw4;
 				if (attn4 > 0)
 				{
@@ -2443,8 +2501,8 @@
 				// Contribution (1,1,0,1)
 				double dx3 = dx4;
 				double dy3 = dy4;
-				double dz3 = dz0 - 3*SquishConstant_4D;
-				double dw3 = dw0 - 1 - 3*SquishConstant_4D;
+				double dz3 = dz0 - 3*Squish4D;
+				double dw3 = dw0 - 1 - 3*Squish4D;
 				double attn3 = 2 - dx3*dx3 - dy3*dy3 - dz3*dz3 - dw3*dw3;
 				if (attn3 > 0)
 				{
@@ -2454,7 +2512,7 @@
 
 				// Contribution (1,0,1,1)
 				double dx2 = dx4;
-				double dy2 = dy0 - 3*SquishConstant_4D;
+				double dy2 = dy0 - 3*Squish4D;
 				double dz2 = dz4;
 				double dw2 = dw3;
 				double attn2 = 2 - dx2*dx2 - dy2*dy2 - dz2*dz2 - dw2*dw2;
@@ -2465,7 +2523,7 @@
 				}
 
 				// Contribution (0,1,1,1)
-				double dx1 = dx0 - 3*SquishConstant_4D;
+				double dx1 = dx0 - 3*Squish4D;
 				double dz1 = dz4;
 				double dy1 = dy4;
 				double dw1 = dw3;
@@ -2477,10 +2535,10 @@
 				}
 
 				// Contribution (1,1,0,0)
-				double dx5 = dx0 - 1 - 2*SquishConstant_4D;
-				double dy5 = dy0 - 1 - 2*SquishConstant_4D;
-				double dz5 = dz0 - 0 - 2*SquishConstant_4D;
-				double dw5 = dw0 - 0 - 2*SquishConstant_4D;
+				double dx5 = dx0 - 1 - 2*Squish4D;
+				double dy5 = dy0 - 1 - 2*Squish4D;
+				double dz5 = dz0 - 0 - 2*Squish4D;
+				double dw5 = dw0 - 0 - 2*Squish4D;
 				double attn5 = 2 - dx5*dx5 - dy5*dy5 - dz5*dz5 - dw5*dw5;
 				if (attn5 > 0)
 				{
@@ -2489,10 +2547,10 @@
 				}
 
 				// Contribution (1,0,1,0)
-				double dx6 = dx0 - 1 - 2*SquishConstant_4D;
-				double dy6 = dy0 - 0 - 2*SquishConstant_4D;
-				double dz6 = dz0 - 1 - 2*SquishConstant_4D;
-				double dw6 = dw0 - 0 - 2*SquishConstant_4D;
+				double dx6 = dx0 - 1 - 2*Squish4D;
+				double dy6 = dy0 - 0 - 2*Squish4D;
+				double dz6 = dz0 - 1 - 2*Squish4D;
+				double dw6 = dw0 - 0 - 2*Squish4D;
 				double attn6 = 2 - dx6*dx6 - dy6*dy6 - dz6*dz6 - dw6*dw6;
 				if (attn6 > 0)
 				{
@@ -2501,10 +2559,10 @@
 				}
 
 				// Contribution (1,0,0,1)
-				double dx7 = dx0 - 1 - 2*SquishConstant_4D;
-				double dy7 = dy0 - 0 - 2*SquishConstant_4D;
-				double dz7 = dz0 - 0 - 2*SquishConstant_4D;
-				double dw7 = dw0 - 1 - 2*SquishConstant_4D;
+				double dx7 = dx0 - 1 - 2*Squish4D;
+				double dy7 = dy0 - 0 - 2*Squish4D;
+				double dz7 = dz0 - 0 - 2*Squish4D;
+				double dw7 = dw0 - 1 - 2*Squish4D;
 				double attn7 = 2 - dx7*dx7 - dy7*dy7 - dz7*dz7 - dw7*dw7;
 				if (attn7 > 0)
 				{
@@ -2513,10 +2571,10 @@
 				}
 
 				// Contribution (0,1,1,0)
-				double dx8 = dx0 - 0 - 2*SquishConstant_4D;
-				double dy8 = dy0 - 1 - 2*SquishConstant_4D;
-				double dz8 = dz0 - 1 - 2*SquishConstant_4D;
-				double dw8 = dw0 - 0 - 2*SquishConstant_4D;
+				double dx8 = dx0 - 0 - 2*Squish4D;
+				double dy8 = dy0 - 1 - 2*Squish4D;
+				double dz8 = dz0 - 1 - 2*Squish4D;
+				double dw8 = dw0 - 0 - 2*Squish4D;
 				double attn8 = 2 - dx8*dx8 - dy8*dy8 - dz8*dz8 - dw8*dw8;
 				if (attn8 > 0)
 				{
@@ -2525,10 +2583,10 @@
 				}
 
 				// Contribution (0,1,0,1)
-				double dx9 = dx0 - 0 - 2*SquishConstant_4D;
-				double dy9 = dy0 - 1 - 2*SquishConstant_4D;
-				double dz9 = dz0 - 0 - 2*SquishConstant_4D;
-				double dw9 = dw0 - 1 - 2*SquishConstant_4D;
+				double dx9 = dx0 - 0 - 2*Squish4D;
+				double dy9 = dy0 - 1 - 2*Squish4D;
+				double dz9 = dz0 - 0 - 2*Squish4D;
+				double dw9 = dw0 - 1 - 2*Squish4D;
 				double attn9 = 2 - dx9*dx9 - dy9*dy9 - dz9*dz9 - dw9*dw9;
 				if (attn9 > 0)
 				{
@@ -2537,10 +2595,10 @@
 				}
 
 				// Contribution (0,0,1,1)
-				double dx10 = dx0 - 0 - 2*SquishConstant_4D;
-				double dy10 = dy0 - 0 - 2*SquishConstant_4D;
-				double dz10 = dz0 - 1 - 2*SquishConstant_4D;
-				double dw10 = dw0 - 1 - 2*SquishConstant_4D;
+				double dx10 = dx0 - 0 - 2*Squish4D;
+				double dy10 = dy0 - 0 - 2*Squish4D;
+				double dz10 = dz0 - 1 - 2*Squish4D;
+				double dw10 = dw0 - 1 - 2*Squish4D;
 				double attn10 = 2 - dx10*dx10 - dy10*dy10 - dz10*dz10 - dw10*dw10;
 				if (attn10 > 0)
 				{
@@ -2573,7 +2631,7 @@
 				value += attnExt2*attnExt2*Extrapolate(xsvExt2, ysvExt2, zsvExt2, wsvExt2, dxExt2, dyExt2, dzExt2, dwExt2);
 			}
 
-			return value/NormConstant_4D;
+			return value/Normalization4D;
 		}
 
 		private double Extrapolate(int xsb, int ysb, double dx, double dy)
