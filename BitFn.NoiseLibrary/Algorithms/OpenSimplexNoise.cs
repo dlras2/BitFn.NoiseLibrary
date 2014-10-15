@@ -348,9 +348,9 @@
 				// We're inside the tetrahedron (3-Simplex) at (0,0,0)
 
 				// Determine which two of (0,0,1), (0,1,0), (1,0,0) are closest.
-				byte aPoint = 0x01;
+				sbyte aPoint = 0x01;
 				double aScore = xins;
-				byte bPoint = 0x02;
+				sbyte bPoint = 0x02;
 				double bScore = yins;
 				if (aScore >= bScore && zins > bScore)
 				{
@@ -369,7 +369,7 @@
 				if (wins > aScore || wins > bScore)
 				{
 					// (0,0,0) is one of the closest two tetrahedral vertices.
-					byte c = (bScore > aScore ? bPoint : aPoint); // Our other closest vertex is the closest out of a and b.
+					sbyte c = (bScore > aScore ? bPoint : aPoint); // Our other closest vertex is the closest out of a and b.
 
 					if ((c & 0x01) == 0)
 					{
@@ -421,7 +421,7 @@
 				else
 				{
 					// (0,0,0) is not one of the closest two tetrahedral vertices.
-					var c = (byte) (aPoint | bPoint); // Our two extra vertices are determined by the closest two.
+					var c = (sbyte) (aPoint | bPoint); // Our two extra vertices are determined by the closest two.
 
 					if ((c & 0x01) == 0)
 					{
@@ -512,9 +512,9 @@
 				// We're inside the tetrahedron (3-Simplex) at (1,1,1)
 
 				// Determine which two tetrahedral vertices are the closest, out of (1,1,0), (1,0,1), (0,1,1) but not (1,1,1).
-				byte aPoint = 0x06;
+				sbyte aPoint = 0x06;
 				double aScore = xins;
-				byte bPoint = 0x05;
+				sbyte bPoint = 0x05;
 				double bScore = yins;
 				if (aScore <= bScore && zins < bScore)
 				{
@@ -533,7 +533,7 @@
 				if (wins < aScore || wins < bScore)
 				{
 					// (1,1,1) is one of the closest two tetrahedral vertices.
-					byte c = (bScore < aScore ? bPoint : aPoint); // Our other closest vertex is the closest out of a and b.
+					sbyte c = (bScore < aScore ? bPoint : aPoint); // Our other closest vertex is the closest out of a and b.
 
 					if ((c & 0x01) != 0)
 					{
@@ -585,7 +585,7 @@
 				else
 				{
 					// (1,1,1) is not one of the closest two tetrahedral vertices.
-					var c = (byte) (aPoint & bPoint); // Our two extra vertices are determined by the closest two.
+					var c = (sbyte) (aPoint & bPoint); // Our two extra vertices are determined by the closest two.
 
 					if ((c & 0x01) != 0)
 					{
@@ -678,10 +678,10 @@
 			{
 				// We're inside the octahedron (Rectified 3-Simplex) in between.
 				double aScore;
-				byte aPoint;
+				sbyte aPoint;
 				bool aIsFurtherSide;
 				double bScore;
-				byte bPoint;
+				sbyte bPoint;
 				bool bIsFurtherSide;
 
 				// Decide between point (0,0,1) and (1,1,0) as closest
@@ -765,7 +765,7 @@
 						zsvExt0 = zsb + 1;
 
 						// Other extra point is based on the shared axis.
-						var c = (byte) (aPoint & bPoint);
+						var c = (sbyte) (aPoint & bPoint);
 						if ((c & 0x01) != 0)
 						{
 							dxExt1 = dx0 - 2 - 2*Squish3D;
@@ -807,7 +807,7 @@
 						zsvExt0 = zsb;
 
 						// Other extra point is based on the omitted axis.
-						var c = (byte) (aPoint | bPoint);
+						var c = (sbyte) (aPoint | bPoint);
 						if ((c & 0x01) == 0)
 						{
 							dxExt1 = dx0 + 1 - Squish3D;
@@ -840,7 +840,7 @@
 				else
 				{
 					// One point on (0,0,0) side, one point on (1,1,1) side
-					byte c1, c2;
+					sbyte c1, c2;
 					if (aIsFurtherSide)
 					{
 						c1 = aPoint;
@@ -1042,9 +1042,9 @@
 				// We're inside the pentachoron (4-Simplex) at (0,0,0,0)
 
 				// Determine which two of (0,0,0,1), (0,0,1,0), (0,1,0,0), (1,0,0,0) are closest.
-				byte aPoint = 0x01;
+				sbyte aPoint = 0x01;
 				double aScore = xins;
-				byte bPoint = 0x02;
+				sbyte bPoint = 0x02;
 				double bScore = yins;
 				if (aScore >= bScore && zins > bScore)
 				{
@@ -1073,7 +1073,7 @@
 				if (uins > aScore || uins > bScore)
 				{
 					// (0,0,0,0) is one of the closest two pentachoron vertices.
-					byte c = (bScore > aScore ? bPoint : aPoint); // Our other closest vertex is the closest out of a and b.
+					sbyte c = (bScore > aScore ? bPoint : aPoint); // Our other closest vertex is the closest out of a and b.
 					if ((c & 0x01) == 0)
 					{
 						xsvExt0 = xsb - 1;
@@ -1153,7 +1153,7 @@
 				else
 				{
 					// (0,0,0,0) is not one of the closest two pentachoron vertices.
-					var c = (byte) (aPoint | bPoint); // Our three extra vertices are determined by the closest two.
+					var c = (sbyte) (aPoint | bPoint); // Our three extra vertices are determined by the closest two.
 
 					if ((c & 0x01) == 0)
 					{
@@ -1292,9 +1292,9 @@
 			{
 				// We're inside the pentachoron (4-Simplex) at (1,1,1,1)
 				// Determine which two of (1,1,1,0), (1,1,0,1), (1,0,1,1), (0,1,1,1) are closest.
-				byte aPoint = 0x0E;
+				sbyte aPoint = 0x0E;
 				double aScore = xins;
-				byte bPoint = 0x0D;
+				sbyte bPoint = 0x0D;
 				double bScore = yins;
 				if (aScore <= bScore && zins < bScore)
 				{
@@ -1323,7 +1323,7 @@
 				if (uins < aScore || uins < bScore)
 				{
 					// (1,1,1,1) is one of the closest two pentachoron vertices.
-					byte c = (bScore < aScore ? bPoint : aPoint); // Our other closest vertex is the closest out of a and b.
+					sbyte c = (bScore < aScore ? bPoint : aPoint); // Our other closest vertex is the closest out of a and b.
 
 					if ((c & 0x01) != 0)
 					{
@@ -1404,7 +1404,7 @@
 				else
 				{
 					// (1,1,1,1) is not one of the closest two pentachoron vertices.
-					var c = (byte) (aPoint & bPoint); // Our three extra vertices are determined by the closest two.
+					var c = (sbyte) (aPoint & bPoint); // Our three extra vertices are determined by the closest two.
 
 					if ((c & 0x01) != 0)
 					{
@@ -1547,10 +1547,10 @@
 			{
 				// We're inside the first dispentachoron (Rectified 4-Simplex)
 				double aScore;
-				byte aPoint;
+				sbyte aPoint;
 				bool aIsBiggerSide = true;
 				double bScore;
-				byte bPoint;
+				sbyte bPoint;
 				bool bIsBiggerSide = true;
 
 				// Decide between (1,1,0,0) and (0,0,1,1)
@@ -1673,8 +1673,8 @@
 					if (aIsBiggerSide)
 					{
 						// Both closest points on the bigger side
-						var c1 = (byte) (aPoint | bPoint);
-						var c2 = (byte) (aPoint & bPoint);
+						var c1 = (sbyte) (aPoint | bPoint);
+						var c2 = (sbyte) (aPoint & bPoint);
 						if ((c1 & 0x01) == 0)
 						{
 							xsvExt0 = xsb;
@@ -1775,7 +1775,7 @@
 						dwExt2 = dw0;
 
 						// Other two points are based on the omitted axes.
-						var c = (byte) (aPoint | bPoint);
+						var c = (sbyte) (aPoint | bPoint);
 
 						if ((c & 0x01) == 0)
 						{
@@ -1849,7 +1849,7 @@
 				else
 				{
 					// One point on each "side"
-					byte c1, c2;
+					sbyte c1, c2;
 					if (aIsBiggerSide)
 					{
 						c1 = aPoint;
@@ -2085,10 +2085,10 @@
 			{
 				// We're inside the second dispentachoron (Rectified 4-Simplex)
 				double aScore;
-				byte aPoint;
+				sbyte aPoint;
 				bool aIsBiggerSide = true;
 				double bScore;
-				byte bPoint;
+				sbyte bPoint;
 				bool bIsBiggerSide = true;
 
 				// Decide between (0,0,1,1) and (1,1,0,0)
@@ -2211,8 +2211,8 @@
 					if (aIsBiggerSide)
 					{
 						// Both closest points on the bigger side
-						var c1 = (byte) (aPoint & bPoint);
-						var c2 = (byte) (aPoint | bPoint);
+						var c1 = (sbyte) (aPoint & bPoint);
+						var c2 = (sbyte) (aPoint | bPoint);
 
 						// Two contributions are permutations of (0,0,0,1) and (0,0,0,2) based on c1
 						xsvExt0 = xsvExt1 = xsb;
@@ -2300,7 +2300,7 @@
 						dwExt2 = dw0 - 1 - 4*Squish4D;
 
 						// Other two points are based on the shared axes.
-						var c = (byte) (aPoint & bPoint);
+						var c = (sbyte) (aPoint & bPoint);
 
 						if ((c & 0x01) != 0)
 						{
@@ -2374,7 +2374,7 @@
 				else
 				{
 					// One point on each "side"
-					byte c1, c2;
+					sbyte c1, c2;
 					if (aIsBiggerSide)
 					{
 						c1 = aPoint;

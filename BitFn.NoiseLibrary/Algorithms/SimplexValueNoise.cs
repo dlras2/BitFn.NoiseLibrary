@@ -6,7 +6,7 @@
 	/// </summary>
 	/// <remarks>
 	///     Original Java implementation released under public domain:
-	///     https:// gist.github.com/KdotJPG/9bbab7d3655b82811b24/22f0b3424c44829846390235da258f5ea705e71c
+	///     https://gist.github.com/KdotJPG/9bbab7d3655b82811b24/22f0b3424c44829846390235da258f5ea705e71c
 	/// </remarks>
 	public class SimplexValueNoise : INoiseService2D
 	{
@@ -71,7 +71,7 @@
 			seed = seed*PermutationConstant1 + PermutationConstant2;
 			seed = seed*PermutationConstant1 + PermutationConstant2;
 			seed = seed*PermutationConstant1 + PermutationConstant2;
-			for (int i = 255; i >= 0; i--)
+			for (int i = PermutationLength - 1; i >= 0; i--)
 			{
 				seed = seed*PermutationConstant1 + PermutationConstant2;
 				var r = (int) ((seed + 31)%(i + 1));
@@ -113,21 +113,21 @@
 
 				// Get our 12 surrounding vertex values
 				short yp = _permutation[(ysb - 1) & 0xFF];
-				byte h1 = _permutation[(yp + xsb - 1) & 0xFF]; // (-1,-1)
-				byte h2 = _permutation[(yp + xsb + 0) & 0xFF]; // ( 0,-1)
-				byte h3 = _permutation[(yp + xsb + 1) & 0xFF]; // ( 1,-1)
+				var h1 = (sbyte) _permutation[(yp + xsb - 1) & 0xFF]; // (-1,-1)
+				var h2 = (sbyte) _permutation[(yp + xsb + 0) & 0xFF]; // ( 0,-1)
+				var h3 = (sbyte) _permutation[(yp + xsb + 1) & 0xFF]; // ( 1,-1)
 				yp = _permutation[(ysb + 0) & 0xFF];
-				byte h4 = _permutation[(yp + xsb - 1) & 0xFF]; // (-1, 0)
-				byte h5 = _permutation[(yp + xsb + 0) & 0xFF]; // ( 0, 0)
-				byte h6 = _permutation[(yp + xsb + 1) & 0xFF]; // ( 1, 0)
-				byte h7 = _permutation[(yp + xsb + 2) & 0xFF]; // ( 2, 0)
+				var h4 = (sbyte) _permutation[(yp + xsb - 1) & 0xFF]; // (-1, 0)
+				var h5 = (sbyte) _permutation[(yp + xsb + 0) & 0xFF]; // ( 0, 0)
+				var h6 = (sbyte) _permutation[(yp + xsb + 1) & 0xFF]; // ( 1, 0)
+				var h7 = (sbyte) _permutation[(yp + xsb + 2) & 0xFF]; // ( 2, 0)
 				yp = _permutation[(ysb + 1) & 0xFF];
-				byte h8 = _permutation[(yp + xsb + 0) & 0xFF]; // ( 0, 1)
-				byte h9 = _permutation[(yp + xsb + 1) & 0xFF]; // ( 1, 1)
-				byte h10 = _permutation[(yp + xsb + 2) & 0xFF]; // ( 2, 1)
+				var h8 = (sbyte) _permutation[(yp + xsb + 0) & 0xFF]; // ( 0, 1)
+				var h9 = (sbyte) _permutation[(yp + xsb + 1) & 0xFF]; // ( 1, 1)
+				var h10 = (sbyte) _permutation[(yp + xsb + 2) & 0xFF]; // ( 2, 1)
 				yp = _permutation[(ysb + 2) & 0xFF];
-				byte h11 = _permutation[(yp + xsb + 1) & 0xFF]; // ( 1, 2)
-				byte h12 = _permutation[(yp + xsb + 2) & 0xFF]; // ( 2, 2)
+				var h11 = (sbyte) _permutation[(yp + xsb + 1) & 0xFF]; // ( 1, 2)
+				var h12 = (sbyte) _permutation[(yp + xsb + 2) & 0xFF]; // ( 2, 2)
 
 				value = Kernels(dx, dy, h1, h2, h3,
 					h4, h5, h6, h7, h8, h9, h10, h11, h12);
@@ -138,21 +138,21 @@
 
 				// Get our 12 surrounding vertex values
 				short yp = _permutation[(ysb - 1) & 0xFF];
-				byte h1 = _permutation[(yp + xsb - 1) & 0xFF]; // (-1,-1)
-				byte h4 = _permutation[(yp + xsb + 0) & 0xFF]; // ( 0,-1)
+				var h1 = (sbyte) _permutation[(yp + xsb - 1) & 0xFF]; // (-1,-1)
+				var h4 = (sbyte) _permutation[(yp + xsb + 0) & 0xFF]; // ( 0,-1)
 				yp = _permutation[(ysb + 0) & 0xFF];
-				byte h2 = _permutation[(yp + xsb - 1) & 0xFF]; // (-1, 0)
-				byte h5 = _permutation[(yp + xsb + 0) & 0xFF]; // ( 0, 0)
-				byte h8 = _permutation[(yp + xsb + 1) & 0xFF]; // ( 1, 0)
+				var h2 = (sbyte) _permutation[(yp + xsb - 1) & 0xFF]; // (-1, 0)
+				var h5 = (sbyte) _permutation[(yp + xsb + 0) & 0xFF]; // ( 0, 0)
+				var h8 = (sbyte) _permutation[(yp + xsb + 1) & 0xFF]; // ( 1, 0)
 				yp = _permutation[(ysb + 1) & 0xFF];
-				byte h3 = _permutation[(yp + xsb - 1) & 0xFF]; // (-1, 1)
-				byte h6 = _permutation[(yp + xsb + 0) & 0xFF]; // ( 0, 1)
-				byte h9 = _permutation[(yp + xsb + 1) & 0xFF]; // ( 1, 1)
-				byte h11 = _permutation[(yp + xsb + 2) & 0xFF]; // ( 2, 1)
+				var h3 = (sbyte) _permutation[(yp + xsb - 1) & 0xFF]; // (-1, 1)
+				var h6 = (sbyte) _permutation[(yp + xsb + 0) & 0xFF]; // ( 0, 1)
+				var h9 = (sbyte) _permutation[(yp + xsb + 1) & 0xFF]; // ( 1, 1)
+				var h11 = (sbyte) _permutation[(yp + xsb + 2) & 0xFF]; // ( 2, 1)
 				yp = _permutation[(ysb + 2) & 0xFF];
-				byte h7 = _permutation[(yp + xsb + 0) & 0xFF]; // ( 0, 2)
-				byte h10 = _permutation[(yp + xsb + 1) & 0xFF]; // ( 1, 2)
-				byte h12 = _permutation[(yp + xsb + 2) & 0xFF]; // ( 2, 2)
+				var h7 = (sbyte) _permutation[(yp + xsb + 0) & 0xFF]; // ( 0, 2)
+				var h10 = (sbyte) _permutation[(yp + xsb + 1) & 0xFF]; // ( 1, 2)
+				var h12 = (sbyte) _permutation[(yp + xsb + 2) & 0xFF]; // ( 2, 2)
 
 				value = Kernels(dy, dx, h1, h2, h3,
 					h4, h5, h6, h7, h8, h9, h10, h11, h12);
@@ -161,8 +161,8 @@
 		}
 
 		private static double Kernels(double dx, double dy,
-			byte h1, byte h2, byte h3, byte h4, byte h5, byte h6,
-			byte h7, byte h8, byte h9, byte h10, byte h11, byte h12)
+			sbyte h1, sbyte h2, sbyte h3, sbyte h4, sbyte h5, sbyte h6,
+			sbyte h7, sbyte h8, sbyte h9, sbyte h10, sbyte h11, sbyte h12)
 		{
 			double value = 0;
 
