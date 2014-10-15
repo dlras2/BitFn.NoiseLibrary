@@ -126,6 +126,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithms\SimplexValueNoise.cs" />
     <Compile Include="Algorithms\OpenSimplexNoise.cs" />
     <Compile Include="INoiseService4D.cs" />
     <Compile Include="INoiseService2D.cs" />
