@@ -10,71 +10,39 @@
 	public class OpenSimplexNoise : INoiseService2D, INoiseService3D, INoiseService4D
 	{
 		/// <summary>
-		///     The squish constant to use for two dimensional noise.
-		/// </summary>
-		/// <remarks>
 		///     <code>(sqrt(2+1)-1)/2 = 0.366025403784438646763723170752936183471402626905190314027903</code>
-		/// </remarks>
+		/// </summary>
 		private const double Squish2D = 0.366025403784438646763723170752936183471402626905190314027903;
 
 		/// <summary>
-		///     The squish constant to use for three dimensional noise.
-		/// </summary>
-		/// <remarks>
 		///     <code>(sqrt(3+1)-1)/3 = 1/3</code>
-		/// </remarks>
+		/// </summary>
 		private const double Squish3D = 1D/3;
 
 		/// <summary>
-		///     The squish constant to use for four dimensional noise.
-		/// </summary>
-		/// <remarks>
 		///     <code>(sqrt(4+1)-1)/4 = 0.309016994374947424102293417182819058860154589902881431067724</code>
-		/// </remarks>
+		/// </summary>
 		private const double Squish4D = 0.309016994374947424102293417182819058860154589902881431067724;
 
 		/// <summary>
-		///     The strech constant to use for two dimensional noise.
-		/// </summary>
-		/// <remarks>
 		///     <code>(1/sqrt(2+1)-1)/2 = -0.21132486540518711774542560974902127217619912436493656199069</code>
-		/// </remarks>
+		/// </summary>
 		private const double Stretch2D = -0.21132486540518711774542560974902127217619912436493656199069;
 
 		/// <summary>
-		///     The strech constant to use for three dimensional noise.
-		/// </summary>
-		/// <remarks>
 		///     <code>(1/sqrt(3+1)-1)/3 = -1/6</code>
-		/// </remarks>
+		/// </summary>
 		private const double Stretch3D = -1D/6;
 
 		/// <summary>
-		///     The strech constant to use for four dimensional noise.
-		/// </summary>
-		/// <remarks>
 		///     <code>(1/sqrt(4+1)-1)/4 = -0.13819660112501051517954131656343618822796908201942371378645</code>
-		/// </remarks>
+		/// </summary>
 		private const double Stretch4D = -0.13819660112501051517954131656343618822796908201942371378645;
 
-		/// <summary>
-		///     The normalization scalar to use for two dimensional noise.
-		/// </summary>
-		private const double Normalization2D = 47;
+		private const double Normalization2D = 40.698258;
+		private const double Normalization3D = 101.635;
+		private const double Normalization4D = 29;
 
-		/// <summary>
-		///     The normalization scalar to use for three dimensional noise.
-		/// </summary>
-		private const double Normalization3D = 103;
-
-		/// <summary>
-		///     The normalization scalar to use for four dimensional noise.
-		/// </summary>
-		private const double Normalization4D = 30;
-
-		/// <summary>
-		///     The default seed to use for the parameterless constructor.
-		/// </summary>
 		private const long DefaultSeed = 0;
 
 		private const int PermutationLength = 256;
@@ -300,10 +268,14 @@
 				value += attnExt*attnExt*Extrapolate(xsvExt, ysvExt, dxExt, dyExt);
 			}
 
-			return value/Normalization2D;
+			value = value/Normalization2D;
+			if (value >= 1)
+				return 1 - double.Epsilon;
+			if (value <= -1)
+				return -1 + double.Epsilon;
+			return value;
 		}
 
-		// 3D OpenSimplex (Simplectic) Noise.
 		public double ComputeNoise(double x, double y, double z)
 		{
 			// Place input coordinates on simplectic honeycomb.
@@ -988,7 +960,12 @@
 				value += attnExt1*attnExt1*Extrapolate(xsvExt1, ysvExt1, zsvExt1, dxExt1, dyExt1, dzExt1);
 			}
 
-			return value/Normalization3D;
+			value = value/Normalization3D;
+			if (value >= 1)
+				return 1 - double.Epsilon;
+			if (value <= -1)
+				return -1 + double.Epsilon;
+			return value;
 		}
 
 		public double ComputeNoise(double x, double y, double z, double w)
@@ -2631,7 +2608,12 @@
 				value += attnExt2*attnExt2*Extrapolate(xsvExt2, ysvExt2, zsvExt2, wsvExt2, dxExt2, dyExt2, dzExt2, dwExt2);
 			}
 
-			return value/Normalization4D;
+			value = value/Normalization4D;
+			if (value >= 1)
+				return 1 - double.Epsilon;
+			if (value <= -1)
+				return -1 + double.Epsilon;
+			return value;
 		}
 
 		private double Extrapolate(int xsb, int ysb, double dx, double dy)

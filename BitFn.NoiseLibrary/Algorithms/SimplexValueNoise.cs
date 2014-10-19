@@ -11,35 +11,21 @@
 	public class SimplexValueNoise : INoiseService2D
 	{
 		/// <summary>
-		///     The squish constant to use for two dimensional noise.
-		/// </summary>
-		/// <remarks>
 		///     <code>(sqrt(2+1)-1)/2 = 0.366025403784438646763723170752936183471402626905190314027903</code>
-		/// </remarks>
+		/// </summary>
 		private const double Squish = 0.366025403784438646763723170752936183471402626905190314027903;
 
 		/// <summary>
-		///     The strech constant to use for two dimensional noise.
-		/// </summary>
-		/// <remarks>
 		///     <code>(1/sqrt(2+1)-1)/2 = -0.21132486540518711774542560974902127217619912436493656199069</code>
-		/// </remarks>
+		/// </summary>
 		private const double Stretch = -0.21132486540518711774542560974902127217619912436493656199069;
 
-		/// <summary>
-		///     The normalization scalar to use for two dimensional noise.
-		/// </summary>
-		private const double Normalization = 2174;
-
-		/// <summary>
-		///     The default seed to use for the parameterless constructor.
-		/// </summary>
-		private const long DefaultSeed = 0;
-
-		/// <summary>
-		///     The radius of the two dimensional kernal.
-		/// </summary>
 		private const double KernelRadius = 1.732050807568877293527446341505872366942805253810380628055806;
+
+		private const double NormalizationShift = 8.16;
+		private const double NormalizationScale = 1889.52;
+
+		private const long DefaultSeed = 0;
 
 		private const int PermutationLength = 256;
 		private const long PermutationConstant1 = 6364136223846793005L;
@@ -157,7 +143,13 @@
 				value = Kernels(dy, dx, h1, h2, h3,
 					h4, h5, h6, h7, h8, h9, h10, h11, h12);
 			}
-			return value/Normalization;
+
+			value = (value + NormalizationShift)/NormalizationScale;
+			if (value >= 1)
+				return 1 - double.Epsilon;
+			if (value <= -1)
+				return -1 + double.Epsilon;
+			return value;
 		}
 
 		private static double Kernels(double dx, double dy,
