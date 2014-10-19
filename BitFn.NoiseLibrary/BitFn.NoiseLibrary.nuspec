@@ -13,7 +13,7 @@
 		<description>$description$</description>
 		<releaseNotes>$releaseNotes$</releaseNotes>
 		<copyright>Copyright 2014</copyright>
-		<tags>Noise ProceduralGeneration</tags>
+		<tags>Noise ProceduralGeneration Simplex OpenSimplex SimplexValue</tags>
 		<references>
 			<reference file="$title$.dll" />
 		</references>
