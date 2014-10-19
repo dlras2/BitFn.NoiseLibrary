@@ -19,6 +19,7 @@
 		</references>
 	</metadata>
 	<files>
+		<file src="..\*.md" target="" />
 		<file src="\bin\$Configuration$\CodeContracts\*.Contracts.dll" target="lib\net40-Client" />
 	</files>
 </package>
